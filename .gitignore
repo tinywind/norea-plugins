@@ -1,0 +1,17 @@
+node_modules
+.vscode
+.idea
+.env
+config.json
+.claude
+.tmp
+
+# ignore dist stuffs
+.js
+.dist
+.DS_Store
+dist
+total.svg
+src/plugins/index.ts
+.history
+broken-sites-report.json
