@@ -1,13 +1,20 @@
 node_modules/
 .vscode/
 .idea/
-.claude/
 .history/
 
 .env
 .env.*
 !.env.template
 config.json
+
+# Claude local-only state
+.claude/settings.local.json
+.claude/*.local.json
+.claude/.cache/
+.claude/cache/
+.claude/logs/
+.claude/tmp/
 
 # Local temporary files
 .tmp/
