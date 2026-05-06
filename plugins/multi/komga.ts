@@ -4,26 +4,147 @@ import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 import { load as parseHTML } from 'cheerio';
 import { storage } from '@libs/storage';
+import { inputs } from '@libs/pluginInputs';
+
+const DISPLAY_SITE = 'https://komga.org/';
+const URL_SETTING_KEY = 'url';
+
+interface RequestOptions {
+  method?: string;
+  body?: unknown;
+  accept?: string;
+}
+
+type SeriesSearchCondition = Record<string, unknown>;
+
+function cleanText(value?: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeBaseUrl(value?: unknown) {
+  const raw = cleanText(value);
+  if (!raw || raw === URL_SETTING_KEY) return '';
+
+  const withProtocol = /^[a-z][a-z\d+\-.]*:\/\//i.test(raw)
+    ? raw
+    : `http://${raw}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.href.endsWith('/') ? parsed.href : `${parsed.href}/`;
+  } catch {
+    return '';
+  }
+}
+
+function absoluteUrl(baseUrl: string, path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  return new URL(path.replace(/^\/+/, ''), baseUrl).href;
+}
+
+function isSelectedFilter(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function equalsCondition(
+  field: 'readStatus' | 'seriesStatus',
+  value: string,
+): SeriesSearchCondition {
+  return {
+    [field]: {
+      operator: 'is',
+      value,
+    },
+  };
+}
+
+function searchBody(
+  conditions: SeriesSearchCondition[],
+  fullTextSearch?: string,
+) {
+  return {
+    ...(fullTextSearch ? { fullTextSearch } : {}),
+    ...(conditions.length === 1
+      ? { condition: conditions[0] }
+      : conditions.length > 1
+        ? { condition: { allOf: conditions } }
+        : {}),
+  };
+}
+
+function responseContentType(response: Response) {
+  return response.headers.get('content-type')?.split(';')[0].trim() ?? '';
+}
 
 class KomgaPlugin implements Plugin.PluginBase {
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.1';
+  version = '1.0.2';
 
-  site = storage.get('url');
-  email = storage.get('email');
-  password = storage.get('password');
+  site = DISPLAY_SITE;
 
-  async makeRequest(url: string): Promise<string> {
-    return await fetchApi(url, {
+  private inputValue(key: string) {
+    return cleanText(inputs.get(key) ?? storage.get(key));
+  }
+
+  private configuredServerUrl() {
+    return normalizeBaseUrl(this.inputValue(URL_SETTING_KEY));
+  }
+
+  private serverUrl() {
+    const url = this.configuredServerUrl();
+    if (!url) {
+      throw new Error('Komga server URL is not configured.');
+    }
+    return url;
+  }
+
+  async makeResponse(
+    url: string,
+    {
+      method = 'GET',
+      body,
+      accept = 'application/json, text/plain, */*',
+    }: RequestOptions = {},
+  ): Promise<Response> {
+    const baseUrl = this.serverUrl();
+    const headers: Record<string, string> = {
+      Accept: accept,
+      'Content-Type': 'application/json;charset=utf-8',
+    };
+    const email = this.inputValue('email');
+    const password = this.inputValue('password');
+
+    if (email || password) {
+      headers.Authorization = `Basic ${this.btoa(email + ':' + password)}`;
+    }
+
+    const response = await fetchApi(absoluteUrl(baseUrl, url), {
+      method,
       headers: {
-        Accept: 'application/json, text/plain, */*',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Basic ${this.btoa(this.email + ':' + this.password)}`,
+        ...headers,
       },
-      Referer: this.site,
-    }).then(res => res.text());
+      body: body === undefined ? undefined : JSON.stringify(body),
+      Referer: baseUrl,
+      contextUrl: baseUrl,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Komga request failed: HTTP ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response;
+  }
+
+  async makeRequest(
+    url: string,
+    options: RequestOptions = {},
+  ): Promise<string> {
+    return await (await this.makeResponse(url, options)).text();
   }
 
   btoa(input = '') {
@@ -51,7 +172,7 @@ class KomgaPlugin implements Plugin.PluginBase {
     return output;
   }
 
-  flattenArray(arr: any) {
+  flattenArray(arr: any[] = []) {
     return arr.reduce((acc: any, obj: any) => {
       const { children, ...rest } = obj;
       acc.push(rest);
@@ -64,18 +185,25 @@ class KomgaPlugin implements Plugin.PluginBase {
     }, []);
   }
 
-  async getSeries(url: string): Promise<Plugin.NovelItem[]> {
+  async getSeries(
+    url: string,
+    body: Record<string, unknown> = {},
+  ): Promise<Plugin.NovelItem[]> {
     const novels: Plugin.NovelItem[] = [];
+    const baseUrl = this.serverUrl();
 
-    const response = await this.makeRequest(url);
+    const response = await this.makeRequest(url, {
+      method: 'POST',
+      body,
+    });
 
-    const series = JSON.parse(response).content;
+    const series = JSON.parse(response).content ?? [];
 
     for (const s of series) {
       novels.push({
         name: s.name,
         path: 'api/v1/series/' + s.id,
-        cover: this.site + `api/v1/series/${s.id}/thumbnail`,
+        cover: absoluteUrl(baseUrl, `api/v1/series/${s.id}/thumbnail`),
       });
     }
 
@@ -89,17 +217,28 @@ class KomgaPlugin implements Plugin.PluginBase {
       filters,
     }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
-    const read_status = filters?.read_status.value
-      ? '&read_status=' + filters?.read_status.value
-      : '';
-    const status = filters?.status.value
-      ? '&status=' + filters?.status.value
-      : '';
+    if (!this.configuredServerUrl()) return [];
+
     const sort = showLatestNovels ? 'lastModified,desc' : 'name,asc';
+    const params = new URLSearchParams({
+      page: (pageNo - 1).toString(),
+      sort,
+    });
+    const conditions: SeriesSearchCondition[] = [];
+    const readStatus = filters?.read_status.value;
+    const seriesStatus = filters?.status.value;
 
-    const url = `${this.site}api/v1/series?page=${pageNo - 1}${read_status}${status}&sort=${sort}`;
+    if (isSelectedFilter(readStatus)) {
+      conditions.push(equalsCondition('readStatus', readStatus));
+    }
 
-    return await this.getSeries(url);
+    if (isSelectedFilter(seriesStatus)) {
+      conditions.push(equalsCondition('seriesStatus', seriesStatus));
+    }
+
+    const url = `api/v1/series/list?${params}`;
+
+    return await this.getSeries(url, searchBody(conditions));
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
@@ -108,9 +247,9 @@ class KomgaPlugin implements Plugin.PluginBase {
       name: 'Untitled',
     };
 
-    const url = this.site + novelPath;
+    const baseUrl = this.serverUrl();
 
-    const response = await this.makeRequest(url);
+    const response = await this.makeRequest(novelPath);
 
     const series = JSON.parse(response);
 
@@ -122,7 +261,7 @@ class KomgaPlugin implements Plugin.PluginBase {
           accumulated + (accumulated !== '' ? ', ' : '') + current.name,
         '',
       );
-    novel.cover = this.site + `api/v1/series/${series.id}/thumbnail`;
+    novel.cover = absoluteUrl(baseUrl, `api/v1/series/${series.id}/thumbnail`);
     novel.genres = series.metadata.genres.join(', ');
 
     switch (series.metadata.status) {
@@ -147,14 +286,14 @@ class KomgaPlugin implements Plugin.PluginBase {
     const chapters: Plugin.ChapterItem[] = [];
 
     const booksResponse = await this.makeRequest(
-      this.site + `api/v1/series/${series.id}/books?unpaged=true`,
+      `api/v1/series/${series.id}/books?unpaged=true`,
     );
 
     const booksData = JSON.parse(booksResponse).content;
 
     for (const book of booksData) {
       const bookManifestResponse = await this.makeRequest(
-        this.site + `opds/v2/books/${book.id}/manifest`,
+        `opds/v2/books/${book.id}/manifest`,
       );
 
       const bookManifest = JSON.parse(bookManifestResponse);
@@ -179,11 +318,46 @@ class KomgaPlugin implements Plugin.PluginBase {
     return novel;
   }
   async parseChapter(chapterPath: string): Promise<string> {
-    const chapterText = await this.makeRequest(this.site + chapterPath);
+    const baseUrl = this.serverUrl();
+    const response = await this.makeResponse(chapterPath, {
+      accept: 'application/xhtml+xml, text/html, image/*, */*',
+    });
+    const contentType = responseContentType(response);
+
+    if (contentType.startsWith('image/')) {
+      return this.imageResponseToHtml(response, contentType);
+    }
+
+    const chapterText = await response.text();
     return this.addUrlToImageHref(
       chapterText,
-      this.site + chapterPath.split('/').slice(0, -1).join('/') + '/',
+      absoluteUrl(baseUrl, chapterPath.split('/').slice(0, -1).join('/') + '/'),
     );
+  }
+
+  async imageResponseToHtml(response: Response, contentType: string) {
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength === 0) {
+      throw new Error('Komga image page is empty.');
+    }
+
+    return `<p><img src="data:${contentType};base64,${this.arrayBufferToBase64(
+      bytes,
+    )}" alt="Komga page" /></p>`;
+  }
+
+  arrayBufferToBase64(buffer: ArrayBuffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(
+        ...bytes.subarray(index, index + chunkSize),
+      );
+    }
+
+    return this.btoa(binary);
   }
 
   // Convert images to <img> tag and correct url
@@ -198,7 +372,7 @@ class KomgaPlugin implements Plugin.PluginBase {
 
       if (href) {
         const img = $('<img />').attr({
-          src: href.startsWith('http') ? href : `${baseUrl}${href}`,
+          src: absoluteUrl(baseUrl, href),
           width: width || undefined,
           height: height || undefined,
         });
@@ -210,7 +384,7 @@ class KomgaPlugin implements Plugin.PluginBase {
     $('img').each((_, img) => {
       const src = $(img).attr('src');
       if (src && !src.startsWith('http')) {
-        $(img).attr('src', `${baseUrl}${src}`);
+        $(img).attr('src', absoluteUrl(baseUrl, src));
       }
     });
 
@@ -226,9 +400,14 @@ class KomgaPlugin implements Plugin.PluginBase {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    const url = `${this.site}api/v1/series?search=${searchTerm}&page=${pageNo - 1}`;
+    if (!this.configuredServerUrl()) return [];
 
-    return await this.getSeries(url);
+    const params = new URLSearchParams({
+      page: (pageNo - 1).toString(),
+    });
+    const url = `api/v1/series/list?${params}`;
+
+    return await this.getSeries(url, searchBody([], searchTerm));
   }
 
   filters = {
@@ -237,10 +416,10 @@ class KomgaPlugin implements Plugin.PluginBase {
       label: 'Status',
       options: [
         { label: 'All', value: '' },
-        { label: 'Completed', value: NovelStatus.Completed },
-        { label: 'Ongoing', value: NovelStatus.Ongoing },
-        { label: 'Cancelled', value: NovelStatus.Cancelled },
-        { label: 'OnHiatus', value: NovelStatus.OnHiatus },
+        { label: 'Completed', value: 'ENDED' },
+        { label: 'Ongoing', value: 'ONGOING' },
+        { label: 'Cancelled', value: 'ABANDONED' },
+        { label: 'OnHiatus', value: 'HIATUS' },
       ],
       type: FilterTypes.Picker,
     },
@@ -257,7 +436,14 @@ class KomgaPlugin implements Plugin.PluginBase {
     },
   } satisfies Filters;
 
-  pluginSettings = {
+  pluginInputs = {
+    url: {
+      value: '',
+      label: 'Server URL',
+      type: 'Url',
+      placeholder: 'https://komga.example.com/',
+      required: true,
+    },
     email: {
       value: '',
       label: 'Email',
@@ -266,12 +452,12 @@ class KomgaPlugin implements Plugin.PluginBase {
     password: {
       value: '',
       label: 'Password',
-    },
-    url: {
-      value: '',
-      label: 'URL',
+      type: 'Password',
+      private: true,
     },
   };
+
+  pluginSettings = this.pluginInputs;
 }
 
 export default new KomgaPlugin();

@@ -57,6 +57,16 @@ export namespace Plugin {
     headers?: Record<string, string>;
     body?: string;
   };
+  export type PluginInputValue = string | boolean;
+  export type PluginInputDefinition = {
+    value?: PluginInputValue;
+    label?: string;
+    type?: string;
+    placeholder?: string;
+    required?: boolean;
+    private?: boolean;
+  };
+  export type PluginInputSchema = Record<string, PluginInputDefinition>;
 
   export type PluginBase = {
     id: string;
@@ -73,6 +83,8 @@ export namespace Plugin {
     site: string;
     imageRequestInit?: ImageRequestInit;
     filters?: Filters;
+    pluginInputs?: PluginInputSchema;
+    pluginSettings?: PluginInputSchema | Record<string, unknown>;
     version: string;
     //flag indicates whether access to LocalStorage, SesesionStorage is required.
     webStorageUtilized?: boolean;
