@@ -8,6 +8,9 @@ This repository is intentionally conservative because LNReaderTauri may expose p
 - Open-license sources when the plugin can preserve attribution and license requirements.
 - Official APIs that explicitly allow third-party clients.
 - User-owned self-hosted sources, such as Komga, where the repository does not ship copyrighted sample content.
+- Project Gutenberg plugins must use OPDS or catalog metadata for discovery instead of scraping ebook landing pages.
+- Aozora Bunko plugins must filter out records whose work copyright flag is not clear.
+- OAPEN plugins must use the official REST API or metadata feeds and surface source license information.
 
 ## Requires review before merge
 

@@ -1,37 +1,52 @@
-# Testing Website Tutorial
+# Testing website tutorial
 
-A comprehensive guide to testing LNReaderTauri plugins using the web interface.
+Use the local playground to exercise plugin methods before publishing a
+manifest.
 
-## Getting Started
+## Getting started
 
-1. **Start the development server:**
+1. Start the development server:
 
    ```bash
    npm run dev:start
    ```
 
-2. **Open your browser:**
-   Navigate to [localhost:3000](http://localhost:3000)
+2. Open [localhost:3000](http://localhost:3000).
 
-3. **Select a plugin:**
-   Use the dropdown in the top navigation bar to select the plugin you want to test.
+3. Select a plugin from the left sidebar.
 
-## Features Overview
+## Sections
 
-The testing website provides five main sections to test different plugin functions:
+The playground has five tabs:
 
-- **Headers** - Configure custom HTTP headers
-- **Popular Novels** - Test `popularNovels()` with pagination and filters
-- **Search Novels** - Test `searchNovels()` with search queries
-- **Parse Novel** - Test `parseNovel()` with a novel URL
-- **Parse Chapter** - Test `parseChapter()` with a chapter URL
+| Tab | Purpose |
+| --- | --- |
+| Popular | Calls `popularNovels(pageNo, options)` with pagination, latest/popular mode, and filters when present. |
+| Search | Calls `searchNovels(searchTerm, pageNo)`. |
+| Parse Novel | Calls `parseNovel(novelPath)` and displays metadata and chapters. |
+| Parse Chapter | Calls `parseChapter(chapterPath)` and previews returned HTML. |
+| Settings | Configures playground request behavior such as user agent, cookies, and fetch mode. This is not the app's per-plugin settings UI. |
 
-## Pre-Submission Testing
+Use plugin `path` values in the Parse Novel and Parse Chapter inputs. A `path`
+may look like a URL, but it is plugin-owned data and should be copied from the
+Popular, Search, or Parse Novel results.
 
-Before submitting your plugin, verify that all five sections work without errors, multiple pages load, search returns accurate results, novel parsing extracts all metadata, chapter content is clean, filters work (if implemented), no console errors appear, URLs are properly formatted, and images load correctly.
+## Pre-submission checks
 
-## Need Help?
+Before submitting a plugin, verify:
 
-- **Plugin Development:** See [docs.md](./docs.md) for API reference
-- **Quick Start:** See [quickstart.md](./quickstart.md) for plugin creation
-- **Issues:** Create a [GitHub issue](https://github.com/tinywind/lnreader-tauri-plugins/issues/new)
+- Popular and latest listings return expected results.
+- Search returns expected results and empty searches are handled deliberately.
+- Parse Novel returns `name`, `path`, and a chapter list.
+- Parse Chapter returns readable HTML without source chrome, scripts, or broken relative image URLs.
+- Filters work when implemented.
+- Cover images load or define `imageRequestInit` when needed.
+- No unauthorized copyrighted text, covers, screenshots, or fixtures are added.
+- No credentials, cookies, or tokens are logged.
+
+## Need help?
+
+- Plugin API reference: [docs.md](./docs.md)
+- Plugin creation: [quickstart.md](./quickstart.md)
+- Source policy: [source-policy.md](./source-policy.md)
+- Issues: [GitHub issues](https://github.com/tinywind/lnreader-tauri-plugins/issues/new)

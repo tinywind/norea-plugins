@@ -4,12 +4,19 @@ Legal-safe sample plugin repository for [LNReaderTauri](https://github.com/tinyw
 
 This repository starts from the LNReader plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
 
+## Runtime Contract
+
+The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [LNReaderTauri's plugin contract](https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; do not duplicate runtime contract details here.
+
 ## Included Samples
 
-| Plugin | Source | Why it is included |
-|---|---|---|
-| Standard Ebooks | <https://standardebooks.org/> | Standard Ebooks publishes carefully produced public-domain ebooks and provides online reading pages. Users outside the United States still need to verify local copyright status. |
-| Komga | User-provided server URL | Komga is self-hosted. Legal status depends on the user's own library, so it is safe as a connector pattern but must not ship sample copyrighted books. |
+| Plugin | Source | Evidence | Why it is included |
+|---|---|---|---|
+| Standard Ebooks | <https://standardebooks.org/> | [Public domain policy](https://standardebooks.org/about/standard-ebooks-and-the-public-domain) | Standard Ebooks publishes carefully produced U.S. public-domain ebooks and dedicates its own ebook work to the public domain. Users outside the United States still need to verify local copyright status. |
+| Project Gutenberg | <https://www.gutenberg.org/> | [Terms of use](https://www.gutenberg.org/policy/terms_of_use.html) | Project Gutenberg provides public-domain-in-the-USA ebooks and machine-readable catalogs. This sample uses OPDS/catalog data instead of scraping ebook landing pages. Users outside the United States still need to verify local copyright status. |
+| Aozora Bunko | <https://www.aozora.gr.jp/> | [Inclusion policy](https://www.aozora.gr.jp/aozora-manual/) | Aozora Bunko accepts works whose copyright has expired or whose rights holder permits publication. This sample filters the catalog to copyright-expired works only. |
+| OAPEN Library | <https://library.oapen.org/> | [REST API guide](https://www.oapen.org/article/8185269-search-using-a-rest-api) | OAPEN provides peer-reviewed open access books and an official REST API with metadata and bitstream links. Individual book licenses still need attribution. |
+| Komga | User-provided server URL | [Komga API documentation](https://komga.org/docs/openapi/komga-api) | Komga is self-hosted. Legal status depends on the user's own library, so it is safe as a connector pattern but must not ship sample copyrighted books. See [docs/komga-plugin.md](./docs/komga-plugin.md) for current host requirements. |
 
 ## Source Policy
 
