@@ -81,7 +81,7 @@ class KomgaPlugin implements Plugin.PluginBase {
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.2';
+  version = '1.0.3';
 
   site = DISPLAY_SITE;
 
