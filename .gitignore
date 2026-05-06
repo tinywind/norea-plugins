@@ -1,17 +1,27 @@
-node_modules
-.vscode
-.idea
-.env
-config.json
-.claude
-.tmp
+node_modules/
+.vscode/
+.idea/
+.claude/
+.history/
 
-# ignore dist stuffs
-.js
-.dist
-.DS_Store
-dist
+.env
+.env.*
+!.env.template
+config.json
+
+# Local temporary files
+.tmp/
+*.log
+
+# Build and generated outputs
+.js/
+.dist/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
 total.svg
 src/plugins/index.ts
-.history
 broken-sites-report.json
+
+.DS_Store
