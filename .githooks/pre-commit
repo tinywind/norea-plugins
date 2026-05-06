@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "Running pre-commit checks..."
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm is required for pre-commit checks."
+  exit 1
+fi
+
+node scripts/generate-plugin-index.js
+if ! git diff --exit-code -- plugins/index.ts; then
+  echo "plugins/index.ts is out of sync with the plugins directory."
+  echo "Run 'node scripts/generate-plugin-index.js' and commit the updated index."
+  exit 1
+fi
+
+npm run verify:commit

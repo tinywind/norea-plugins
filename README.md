@@ -30,8 +30,18 @@ See [docs/source-policy.md](./docs/source-policy.md) before adding a new source.
 
 ## Development
 
+### Environment
+
+Use the same Node.js major version as CI:
+
+| Tool | Version | Required for |
+| --- | --- | --- |
+| Node.js | 24.x | Development server, TypeScript compilation, manifest generation, verification hooks |
+| npm | Bundled with Node.js 24.x | Dependency installation and project scripts |
+
 ```bash
 npm install
+npm run hooks:install
 npm run dev:start
 ```
 
@@ -39,6 +49,18 @@ Generate the plugin manifest:
 
 ```bash
 npm run build:full
+```
+
+Run the local verification used by the commit hook:
+
+```bash
+npm run verify:commit
+```
+
+After `npm run build:full`, verify the generated manifest and compiled plugin JavaScript:
+
+```bash
+npm run verify:plugins
 ```
 
 The published manifest is expected at:

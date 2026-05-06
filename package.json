@@ -12,6 +12,7 @@
     "build:manifest:dev": "node --env-file=.env ./scripts/build-plugin-manifest.js",
     "build:icons": "node scripts/generate-plugin-index.js && npm run build:compile && npm run build:manifest && node ./scripts/download-plugin-icons.js",
     "build:full": "node scripts/generate-plugin-index.js && npm run build:compile && npm run build:manifest",
+    "hooks:install": "git config core.hooksPath .githooks",
     "publish:plugins": "chmod +x ./scripts/publish-plugins.sh && ./scripts/publish-plugins.sh",
     "publish:plugins:windows": "powershell ./scripts/publish-plugins.ps1",
     "serve:dev": "npm run build:compile && npm run build:manifest:dev && serve",
@@ -19,7 +20,9 @@
     "lint:fix": "npx eslint . --fix",
     "format": "prettier --write \"./**/*.{js,ts}\"",
     "format:check": "prettier --check \"./**/*.{js,ts}\"",
-    "check:sites": "node scripts/check-plugin-sites.js"
+    "check:sites": "node scripts/check-plugin-sites.js",
+    "verify:commit": "npm run format:check && npm run lint && npm run build:compile",
+    "verify:plugins": "node scripts/verify-plugin-artifacts.js"
   },
   "author": "Norea",
   "license": "MIT",
