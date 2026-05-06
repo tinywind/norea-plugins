@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 const TIMEOUT = 10000;
 const CONCURRENT_REQUESTS = 10;
 const PLUGINS_JSON_URL =
-  'https://raw.githubusercontent.com/tinywind/lnreader-tauri-plugins/refs/heads/plugins/v0.1.0/.dist/plugins.json';
+  'https://raw.githubusercontent.com/tinywind/norea-plugins/refs/heads/plugins/v0.1.0/.dist/plugins.json';
 
 const results = {
   accessible: [],

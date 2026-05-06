@@ -9,7 +9,7 @@ const SITE_URL = `${BASE_URL}/`;
 const PAGE_SIZE = 25;
 const HTML_PREFIX = 'gutenberg-html:';
 const USER_AGENT =
-  'LNReaderTauri/0.1 (+https://github.com/tinywind/lnreader-tauri)';
+  'Norea/0.1 (+https://github.com/tinywind/norea)';
 type CheerioSelection = ReturnType<CheerioAPI>;
 
 function requestInit(accept: string) {

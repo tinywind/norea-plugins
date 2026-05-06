@@ -1,8 +1,8 @@
-# Documentation for LNReaderTauri plugins
+# Documentation for Norea plugins
 
 This document is an authoring companion for sample plugins in this repository.
 The canonical runtime, sandbox, module whitelist, and host capability contract
-lives in [LNReaderTauri's plugin contract](https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md).
+lives in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md).
 Keep this repository focused on sample plugins and source policy.
 
 - [PluginBase](#pluginbase)
@@ -320,9 +320,9 @@ filters = {
 
 ## Plugin Inputs
 
-LNReaderTauri owns the canonical input contract:
+Norea owns the canonical input contract:
 
-<https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md#app-managed-plugin-inputs>
+<https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md#app-managed-plugin-inputs>
 
 Use `pluginInputs` for user-provided values such as a self-hosted server URL,
 username, password, token, or feature toggle. Keep `pluginSettings` as an alias
@@ -383,7 +383,7 @@ const $ = parseHTML(xml, { xmlMode: true });
 
 ## Fetching
 
-Use `@libs/fetch` helpers for plugin-owned network requests. In LNReaderTauri,
+Use `@libs/fetch` helpers for plugin-owned network requests. In Norea,
 these route through the host plugin fetch path.
 
 ```ts
@@ -428,6 +428,6 @@ const lastQuery = storage.get('lastQuery');
 storage.delete('lastQuery');
 ```
 
-In LNReaderTauri, storage is namespaced by plugin id. Do not store secrets unless
+In Norea, storage is namespaced by plugin id. Do not store secrets unless
 the host explicitly supports the required security model. `type: 'Password'`
 only masks the input UI; it is not an encryption boundary.

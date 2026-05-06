@@ -9,4 +9,4 @@ export const NovelStatus = {
 } as const;
 
 export const defaultCover =
-  'https://raw.githubusercontent.com/tinywind/lnreader-tauri-plugins/main/public/static/coverNotAvailable.webp';
+  'https://raw.githubusercontent.com/tinywind/norea-plugins/main/public/static/coverNotAvailable.webp';

@@ -19,7 +19,7 @@ type PickerFilterProps = {
   set: (value: string) => void;
 };
 
-const EMPTY_VALUE_PLACEHOLDER = '__lnreader_empty__';
+const EMPTY_VALUE_PLACEHOLDER = '__norea_empty__';
 
 export function PickerFilter({ filter, value, set }: PickerFilterProps) {
   // Map empty string to placeholder for Radix UI Select

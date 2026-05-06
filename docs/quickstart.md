@@ -10,7 +10,7 @@
 - TypeScript or JavaScript basics
 - Node >=18
 - Dependencies installed with `npm i`
-- The canonical [LNReaderTauri plugin contract](https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md) for supported runtime APIs and sandbox rules
+- The canonical [Norea plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md) for supported runtime APIs and sandbox rules
 
 ### Guide
 

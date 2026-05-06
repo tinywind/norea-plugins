@@ -18,9 +18,9 @@ local settings remain usable.
 The `url` value is normalized by the plugin. If the scheme is omitted, the
 plugin assumes `http://`.
 
-## LNReaderTauri settings
+## Norea settings
 
-LNReaderTauri renders plugin settings for installed plugins. Open the Komga
+Norea renders plugin settings for installed plugins. Open the Komga
 settings action and save the `url`, `email`, and `password` values before
 browsing or searching the source.
 
@@ -32,9 +32,9 @@ building invalid URLs.
 
 ## Host requirements
 
-The canonical app-side contract is maintained in LNReaderTauri:
+The canonical app-side contract is maintained in Norea:
 
-<https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md#app-managed-plugin-inputs>
+<https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md#app-managed-plugin-inputs>
 
 A compatible host must persist the input keys above for the `komga` plugin
 before calling `popularNovels`, `searchNovels`, `parseNovel`, or `parseChapter`.

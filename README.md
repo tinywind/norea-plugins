@@ -1,12 +1,12 @@
-# LNReaderTauri Plugins
+# Norea Plugins
 
-Legal-safe sample plugin repository for [LNReaderTauri](https://github.com/tinywind/lnreader-tauri).
+Legal-safe sample plugin repository for [Norea](https://github.com/tinywind/norea).
 
-This repository starts from the LNReader plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
+This repository starts from the upstream plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
 
 ## Runtime Contract
 
-The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [LNReaderTauri's plugin contract](https://github.com/tinywind/lnreader-tauri/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; do not duplicate runtime contract details here.
+The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; do not duplicate runtime contract details here.
 
 ## Included Samples
 
@@ -44,7 +44,7 @@ npm run build:full
 The published manifest is expected at:
 
 ```text
-https://raw.githubusercontent.com/tinywind/lnreader-tauri-plugins/plugins/v0.1.0/.dist/plugins.min.json
+https://raw.githubusercontent.com/tinywind/norea-plugins/plugins/v0.1.0/.dist/plugins.min.json
 ```
 
 ## Project Layout
@@ -59,4 +59,4 @@ docs/          Plugin development and source policy docs
 
 ## License
 
-Code is MIT, inherited from the upstream LNReader plugin repository structure. External source content keeps its original license and copyright status.
+Code is MIT, inherited from the upstream plugin repository structure. External source content keeps its original license and copyright status.

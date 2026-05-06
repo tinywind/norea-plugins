@@ -49,4 +49,4 @@ Before submitting a plugin, verify:
 - Plugin API reference: [docs.md](./docs.md)
 - Plugin creation: [quickstart.md](./quickstart.md)
 - Source policy: [source-policy.md](./source-policy.md)
-- Issues: [GitHub issues](https://github.com/tinywind/lnreader-tauri-plugins/issues/new)
+- Issues: [GitHub issues](https://github.com/tinywind/norea-plugins/issues/new)

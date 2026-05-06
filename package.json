@@ -1,7 +1,7 @@
 {
-  "name": "lnreader-tauri-plugins",
+  "name": "norea-plugins",
   "version": "0.1.0",
-  "description": "Legal-safe sample plugins for LNReaderTauri",
+  "description": "Legal-safe sample plugins for Norea",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -21,7 +21,7 @@
     "format:check": "prettier --check \"./**/*.{js,ts}\"",
     "check:sites": "node scripts/check-plugin-sites.js"
   },
-  "author": "LNReaderTauri",
+  "author": "Norea",
   "license": "MIT",
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.7",

@@ -80,7 +80,7 @@ export const fetchFile = async function (url: string, init?: FetchInit) {
  * @param init
  * @param encoding default: `utf-8`. link: https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder/encoding
  * @returns plain text
- * @example fetchText('https://github.com/LNReader/lnreader', {}, 'gbk');
+ * @example fetchText('https://example.com/catalog.html', {}, 'gbk');
  */
 export const fetchText = async function (
   url: string,

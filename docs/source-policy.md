@@ -1,6 +1,6 @@
 # Source Policy
 
-This repository is intentionally conservative because LNReaderTauri may expose plugins and screenshots in public release materials.
+This repository is intentionally conservative because Norea may expose plugins and screenshots in public release materials.
 
 ## Allowed by default
 
