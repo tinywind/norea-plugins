@@ -14,7 +14,7 @@ fi
 rm -rf .dist .js total.svg
 node scripts/generate-plugin-index.js
 npx tsc --project tsconfig.production.json
-npm run build:manifest
+BRANCH="$dist" npm run build:manifest
 
 if [ ! -s ".dist/plugins.min.json" ]; then
   echo "ERROR: Manifest generation failed."
@@ -23,9 +23,7 @@ fi
 
 git checkout --orphan "$dist"
 git reset
-mkdir -p .js/src
-cp -r .js/plugins .js/src/plugins
-git add -f public/static .dist .js/src/plugins total.svg
+git add -f public/static .dist .js/plugins total.svg
 git commit -m "chore(plugins): publish plugin manifest"
 git push -f origin "$dist"
 git checkout -f "$current"
