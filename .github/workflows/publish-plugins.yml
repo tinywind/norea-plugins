@@ -25,6 +25,7 @@ concurrency:
 jobs:
   build:
     name: Build Plugin Artifacts
+    if: ${{ github.ref_name != 'private' && !startsWith(github.ref_name, 'private/') }}
     runs-on: ubuntu-latest
     outputs:
       plugin_files: ${{ steps.plugin_files.outputs.files }}
@@ -116,7 +117,7 @@ jobs:
   upload-plugin-js:
     name: Upload ${{ matrix.plugin.artifact }}
     needs: build
-    if: ${{ needs.build.outputs.plugin_files != '[]' }}
+    if: ${{ github.ref_name != 'private' && !startsWith(github.ref_name, 'private/') && needs.build.outputs.plugin_files != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -140,7 +141,7 @@ jobs:
   publish:
     name: Publish Plugins
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.ref_name != 'private' && !startsWith(github.ref_name, 'private/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
