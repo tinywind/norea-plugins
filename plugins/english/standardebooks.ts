@@ -69,7 +69,7 @@ class StandardEbooks implements Plugin.PluginBase {
         new URL(href || '', `${requestUrl(novelPath)}/`).href,
       );
       if (!href || !name || this.isNonReadingSection(path)) return;
-      chapters.push({ name, path });
+      chapters.push({ name, path, contentType: 'html' });
     });
 
     return {

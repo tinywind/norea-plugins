@@ -14,10 +14,33 @@ import {
 } from '@/components/ui/tooltip';
 import { useAppStore } from '@/store';
 import { usePluginCustomAssets } from '@/hooks/usePluginCustomAssets';
+import type { Plugin } from '@/types/plugin';
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function chapterContentToHtml(
+  content: string,
+  contentType: Plugin.ChapterContentType | undefined,
+) {
+  if (contentType === 'text') {
+    return `<pre>${escapeHtml(content)}</pre>`;
+  }
+  return content;
+}
 
 export default function ParseChapterSection() {
   const plugin = useAppStore(state => state.plugin);
   const parseChapterPath = useAppStore(state => state.parseChapterPath);
+  const parseChapterContentType = useAppStore(
+    state => state.parseChapterContentType,
+  );
   const shouldAutoSubmitChapter = useAppStore(
     state => state.shouldAutoSubmitChapter,
   );
@@ -26,20 +49,27 @@ export default function ParseChapterSection() {
   );
   const [chapterPath, setChapterPath] = useState('');
   const [chapterText, setChapterText] = useState('');
+  const [chapterContentType, setChapterContentType] =
+    useState<Plugin.ChapterContentType>('html');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [showRawHtml, setShowRawHtml] = useState(false);
 
+  const chapterHtml = chapterContentToHtml(chapterText, chapterContentType);
   const { customCSSLoaded, customJSLoaded, customCSSError, customJSError } =
-    usePluginCustomAssets(plugin, chapterText);
+    usePluginCustomAssets(plugin, chapterHtml);
 
-  const fetchChapterByPath = async (path: string) => {
+  const fetchChapterByPath = async (
+    path: string,
+    contentType: Plugin.ChapterContentType = 'html',
+  ) => {
     if (plugin && path.trim()) {
       setLoading(true);
       setFetchError('');
       try {
         const result = await plugin.parseChapter(path);
         setChapterText(result);
+        setChapterContentType(contentType);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch chapter';
@@ -52,7 +82,7 @@ export default function ParseChapterSection() {
   };
 
   const fetchChapter = async () => {
-    await fetchChapterByPath(chapterPath);
+    await fetchChapterByPath(chapterPath, chapterContentType);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -72,15 +102,17 @@ export default function ParseChapterSection() {
   useEffect(() => {
     if (parseChapterPath) {
       setChapterPath(parseChapterPath);
+      setChapterContentType(parseChapterContentType ?? 'html');
 
       if (shouldAutoSubmitChapter && plugin) {
-        fetchChapterByPath(parseChapterPath);
+        fetchChapterByPath(parseChapterPath, parseChapterContentType ?? 'html');
       }
 
       clearParseChapterPath();
     }
   }, [
     parseChapterPath,
+    parseChapterContentType,
     shouldAutoSubmitChapter,
     plugin,
     clearParseChapterPath,
@@ -123,7 +155,10 @@ export default function ParseChapterSection() {
           <Input
             placeholder="Enter chapter path..."
             value={chapterPath}
-            onChange={e => setChapterPath(e.target.value)}
+            onChange={e => {
+              setChapterPath(e.target.value);
+              setChapterContentType('html');
+            }}
             onKeyPress={handleKeyPress}
             className="flex-1"
             disabled={!plugin}
@@ -195,7 +230,7 @@ export default function ParseChapterSection() {
                 <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-muted/50">
                   <Code className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Raw HTML
+                    Raw Content
                   </span>
                   <Switch
                     checked={showRawHtml}
@@ -244,7 +279,7 @@ export default function ParseChapterSection() {
             <div className="border border-border rounded-lg">
               <div className="bg-muted/50 rounded-t-lg px-4 py-2 border-b border-border">
                 <p className="text-xs text-muted-foreground font-medium">
-                  {showRawHtml ? 'RAW HTML' : 'CHAPTER CONTENT'} (
+                  {showRawHtml ? 'RAW CONTENT' : 'CHAPTER CONTENT'} (
                   {chapterText.length} characters)
                 </p>
               </div>
@@ -257,7 +292,7 @@ export default function ParseChapterSection() {
                   <div
                     className="prose prose-sm dark:prose-invert max-w-none text-foreground"
                     dangerouslySetInnerHTML={{
-                      __html: chapterText,
+                      __html: chapterHtml,
                     }}
                   />
                 )}

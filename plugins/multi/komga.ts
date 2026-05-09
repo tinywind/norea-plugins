@@ -309,6 +309,7 @@ class KomgaPlugin implements Plugin.PluginBase {
         chapters.push({
           name: `${i}/${bookManifest.readingOrder.length} - ${book.metadata.title}${title ? ' - ' + title : ''}`,
           path: 'opds/v2' + page.href?.split('opds/v2').pop(),
+          contentType: 'html',
         });
         i++;
       }

@@ -17,6 +17,7 @@ The canonical plugin runtime, sandbox, whitelist, and host capability contract i
 | Aozora Bunko | <https://www.aozora.gr.jp/> | [Inclusion policy](https://www.aozora.gr.jp/aozora-manual/) | Aozora Bunko accepts works whose copyright has expired or whose rights holder permits publication. This sample filters the catalog to copyright-expired works only. |
 | OAPEN Library | <https://library.oapen.org/> | [REST API guide](https://www.oapen.org/article/8185269-search-using-a-rest-api) | OAPEN provides peer-reviewed open access books and an official REST API with metadata and bitstream links. Individual book licenses still need attribution. |
 | Komga | User-provided server URL | [Komga API documentation](https://komga.org/docs/openapi/komga-api) | Komga is self-hosted. Legal status depends on the user's own library, so it is safe as a connector pattern but must not ship sample copyrighted books. See [docs/komga-plugin.md](./docs/komga-plugin.md) for current host requirements. |
+| Dev Content Type Fixture | Local dev server static files | Local fixture content | Development-only smoke fixture for Norea's per-chapter `html`, `text`, and `pdf` content types. It does not contact external sites. |
 
 ## Source Policy
 
@@ -44,6 +45,19 @@ npm install
 npm run hooks:install
 npm run dev:start
 ```
+
+The `Dev Content Type Fixture` plugin is available when the local dev server is
+running. Use it from the playground or from a local Norea build pointed at this
+repository's dev manifest to smoke test three chapter rows: HTML with relative
+media references, raw plain text, and a PDF-backed chapter with an HTML fallback
+link. The fixture is excluded from the production manifest; `build:manifest:dev`
+includes it through an explicit dev-only manifest flag. The static files live
+under `public/static/fixtures/content-types/`.
+
+For desktop smoke testing, keep `USER_CONTENT_BASE` and the fixture plugin's
+`baseUrl` setting at `http://localhost:3000`. For the Android emulator, set both
+values to `http://10.0.2.2:3000` before generating the dev manifest and before
+using the installed fixture source in Norea.
 
 Generate the plugin manifest:
 

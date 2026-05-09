@@ -158,6 +158,30 @@ function readableBitstream(bitstream: OapenBitstream) {
   );
 }
 
+function bitstreamContentType(
+  bitstream: OapenBitstream,
+  fileUrl: string,
+): Plugin.ChapterContentType {
+  const mimeType = (bitstream.mimeType ?? '').toLowerCase();
+  const name = bitstream.name ?? '';
+
+  if (
+    mimeType === 'application/pdf' ||
+    /\.pdf$/i.test(name) ||
+    /\.pdf(?:$|[?#])/i.test(fileUrl)
+  ) {
+    return 'pdf';
+  }
+  if (
+    mimeType === 'text/plain' ||
+    /\.txt$/i.test(name) ||
+    /\.txt(?:$|[?#])/i.test(fileUrl)
+  ) {
+    return 'text';
+  }
+  return 'html';
+}
+
 class OapenLibrary implements Plugin.PluginBase {
   id = 'oapen';
   name = 'OAPEN Library';
@@ -216,6 +240,7 @@ class OapenLibrary implements Plugin.PluginBase {
     const chapters: Plugin.ChapterItem[] = bitstreams.length
       ? bitstreams.map(({ bitstream, index, url }) => ({
           name: bitstreamLabel(bitstream, index),
+          contentType: bitstreamContentType(bitstream, url),
           path: encodeFilePayload({
             recordUrl,
             fileUrl: url,
@@ -226,6 +251,7 @@ class OapenLibrary implements Plugin.PluginBase {
       : [
           {
             name: 'Source record',
+            contentType: 'html',
             path: encodeFilePayload({
               recordUrl,
               fileUrl: recordUrl,
@@ -265,7 +291,7 @@ class OapenLibrary implements Plugin.PluginBase {
         requestInit('text/plain, */*'),
       );
       const text = await response.text();
-      return `<pre>${escapeHtml(text)}</pre>`;
+      return text;
     }
 
     return [

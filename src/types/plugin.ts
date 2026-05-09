@@ -1,8 +1,14 @@
 import { FilterToValues, Filters } from '@libs/filterInputs';
 export namespace Plugin {
+  export type ChapterContentType = 'html' | 'text' | 'pdf';
+
   export type ChapterItem = {
     name: string;
     path: string;
+    /**
+     * Defaults to "html" for older hosts and plugins.
+     */
+    contentType?: ChapterContentType;
     /**
      * "YYYY-MM-DD" format or ISO string format
      * ```js
@@ -98,6 +104,7 @@ export namespace Plugin {
      * @returns novel metadata and its first page
      */
     parseNovel(novelPath: string): Promise<SourceNovel>;
+    /** Return content matching the chapter row's contentType. */
     parseChapter(chapterPath: string): Promise<string>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
     resolveUrl?(path: string, isNovel?: boolean): string;

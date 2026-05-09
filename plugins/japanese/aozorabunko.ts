@@ -62,15 +62,6 @@ function toAbsoluteUrl(url: string) {
   return new URL(url, SITE_URL).href;
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function joinName(lastName: string, firstName: string) {
   return cleanText(`${lastName}${firstName}`);
 }
@@ -231,6 +222,7 @@ class AozoraBunko implements Plugin.PluginBase {
     if (book.htmlUrl) {
       chapters.push({
         name: 'Full text',
+        contentType: 'html',
         path: chapterPath(
           HTML_PREFIX,
           toAbsoluteUrl(book.htmlUrl),
@@ -240,6 +232,7 @@ class AozoraBunko implements Plugin.PluginBase {
     } else if (book.textUrl) {
       chapters.push({
         name: 'Full text',
+        contentType: 'text',
         path: chapterPath(
           TEXT_PREFIX,
           toAbsoluteUrl(book.textUrl),
@@ -283,18 +276,16 @@ class AozoraBunko implements Plugin.PluginBase {
       const body = await response.arrayBuffer();
 
       if (!/\.zip$/i.test(url)) {
-        const text = cleanAozoraText(decodeBytes(body, encoding));
-        return `<pre>${escapeHtml(text)}</pre>`;
+        return cleanAozoraText(decodeBytes(body, encoding));
       }
 
-      const text = cleanAozoraText(
+      return cleanAozoraText(
         await readZipText(body, {
           extension: 'txt',
           encoding,
           maxBytes: ZIP_TEXT_MAX_BYTES,
         }),
       );
-      return `<pre>${escapeHtml(text)}</pre>`;
     }
 
     return '';

@@ -10,6 +10,25 @@ interface UseEpubExportOptions {
   novelPath: string;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function chapterContentToHtml(
+  chapter: Plugin.ChapterItem,
+  content: string,
+) {
+  if (chapter.contentType === 'text') {
+    return `<pre>${escapeHtml(content)}</pre>`;
+  }
+  return content;
+}
+
 export function useEpubExport({
   plugin,
   sourceNovel,
@@ -78,7 +97,10 @@ export function useEpubExport({
       for (let i = 0; i < allChapters.length; i++) {
         const chapter = allChapters[i];
         try {
-          const content = await plugin.parseChapter(chapter.path);
+          const content = chapterContentToHtml(
+            chapter,
+            await plugin.parseChapter(chapter.path),
+          );
           chapterContents.push({
             title: chapter.name,
             content: content || '<p>No content available</p>',

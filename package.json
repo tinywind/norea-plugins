@@ -9,7 +9,7 @@
     "dev:start": "node scripts/generate-plugin-index.js && vite",
     "build:compile": "npx tsc --project tsconfig.production.json",
     "build:manifest": "node ./scripts/build-plugin-manifest.js",
-    "build:manifest:dev": "node --env-file=.env ./scripts/build-plugin-manifest.js",
+    "build:manifest:dev": "node --env-file=.env ./scripts/build-plugin-manifest.js --include-dev",
     "build:icons": "node scripts/generate-plugin-index.js && npm run build:compile && npm run build:manifest && node ./scripts/download-plugin-icons.js",
     "build:full": "node scripts/generate-plugin-index.js && npm run build:compile && npm run build:manifest",
     "hooks:install": "git config core.hooksPath .githooks",

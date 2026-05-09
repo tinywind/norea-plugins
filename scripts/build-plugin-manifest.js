@@ -23,6 +23,11 @@ const STATIC_LINK = `${USER_CONTENT_LINK}/public/static`;
 const PLUGIN_LINK = `${USER_CONTENT_LINK}/.js/plugins`;
 
 const DIST_DIR = '.dist';
+const args = process.argv.slice(2);
+let ONLY_NEW = args.includes('--only-new');
+const INCLUDE_DEV_PLUGINS = args.includes('--include-dev');
+const DEV_LANGUAGES = INCLUDE_DEV_PLUGINS ? { Dev: 'Development' } : {};
+const manifestLanguages = { ...languages, ...DEV_LANGUAGES };
 
 let json = [];
 if (!fs.existsSync(DIST_DIR)) {
@@ -33,9 +38,6 @@ const jsonMinPath = path.join(DIST_DIR, 'plugins.min.json');
 const pluginSet = new Set();
 const pluginsPerLanguage = {};
 const pluginsWithFiltersPerLanguage = {};
-
-const args = process.argv.slice(2);
-let ONLY_NEW = args.includes('--only-new');
 
 let existingPlugins = {};
 if (!fs.existsSync(jsonPath)) ONLY_NEW = false;
@@ -64,6 +66,14 @@ function compareVersions(a, b) {
   return 0;
 }
 
+function manifestSite(id, site) {
+  if (id === 'dev-content-type-fixture' && INCLUDE_DEV_PLUGINS) {
+    return `${USER_CONTENT_LINK}/static/fixtures/content-types/`;
+  }
+
+  return site;
+}
+
 const createRecursiveProxy = () => {
   const target = {};
   const handler = {
@@ -86,7 +96,7 @@ const _require = () => proxy;
 
 const COMPILED_PLUGIN_DIR = './.js/plugins';
 
-for (let language in languages) {
+for (let language in manifestLanguages) {
   console.log(
     ` ${language} `
       .padStart(Math.floor((language.length + 32) / 2), '=')
@@ -131,8 +141,8 @@ for (let language in languages) {
     const info = {
       id,
       name: normalisedName,
-      site,
-      lang: languages[language],
+      site: manifestSite(id, site),
+      lang: manifestLanguages[language],
       version,
       url: `${PLUGIN_LINK}/${language.toLowerCase()}/${plugin}`,
       iconUrl: `${STATIC_LINK}/${icon || 'siteNotAvailable.png'}`,
@@ -203,7 +213,7 @@ if (!ONLY_NEW)
   );
 
 // check for broken plugins
-for (let language in languages) {
+for (let language in manifestLanguages) {
   const tsFiles = fs.readdirSync(
     path.join('./plugins', language.toLocaleLowerCase()),
   );
@@ -229,7 +239,7 @@ const totalPluginsWithFilter = Object.values(
 // Markdown table for GitHub Actions
 console.warn('\n| Language | Plugins (With Filters) |');
 console.warn('|----------|------------------------|');
-for (const language of Object.keys(languages)) {
+for (const language of Object.keys(manifestLanguages)) {
   console.warn(
     `| ${language} | ${pluginsPerLanguage[language] || 0} (${pluginsWithFiltersPerLanguage[language] || 0}) |`,
   );

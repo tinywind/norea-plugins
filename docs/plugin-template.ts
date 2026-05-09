@@ -64,6 +64,7 @@ class TemplatePlugin implements Plugin.PluginBase {
     const chapter: Plugin.ChapterItem = {
       name: '',
       path: '',
+      contentType: 'html',
       releaseTime: '',
       chapterNumber: 0,
     };
@@ -73,9 +74,9 @@ class TemplatePlugin implements Plugin.PluginBase {
     return novel;
   }
   async parseChapter(chapterPath: string): Promise<string> {
-    // parse chapter text here
-    const chapterText = '';
-    return chapterText;
+    // Parse chapter content here. Return raw text only when chapter.contentType is "text".
+    const chapterHtml = '';
+    return chapterHtml;
   }
   async searchNovels(
     searchTerm: string,

@@ -1,13 +1,19 @@
 import { StoreCreator } from '.';
+import type { Plugin } from '@/types/plugin';
 
 export type NavigationStore = {
   parseNovelPath?: string;
   parseChapterPath?: string;
+  parseChapterContentType?: Plugin.ChapterContentType;
   shouldAutoSubmitNovel: boolean;
   shouldAutoSubmitChapter: boolean;
   setParseNovelPath(path: string, autoSubmit?: boolean): void;
   clearParseNovelPath(): void;
-  setParseChapterPath(path: string, autoSubmit?: boolean): void;
+  setParseChapterPath(
+    path: string,
+    autoSubmit?: boolean,
+    contentType?: Plugin.ChapterContentType,
+  ): void;
   clearParseChapterPath(): void;
 };
 
@@ -18,6 +24,7 @@ export type NavigationStore = {
 export const NavigationStore: StoreCreator<NavigationStore> = set => ({
   parseNovelPath: undefined,
   parseChapterPath: undefined,
+  parseChapterContentType: undefined,
   shouldAutoSubmitNovel: false,
   shouldAutoSubmitChapter: false,
 
@@ -37,10 +44,11 @@ export const NavigationStore: StoreCreator<NavigationStore> = set => ({
     }));
   },
 
-  setParseChapterPath(path: string, autoSubmit = true) {
+  setParseChapterPath(path: string, autoSubmit = true, contentType) {
     set(state => ({
       ...state,
       parseChapterPath: path,
+      parseChapterContentType: contentType,
       shouldAutoSubmitChapter: autoSubmit,
     }));
   },
@@ -49,6 +57,7 @@ export const NavigationStore: StoreCreator<NavigationStore> = set => ({
     set(state => ({
       ...state,
       parseChapterPath: undefined,
+      parseChapterContentType: undefined,
       shouldAutoSubmitChapter: false,
     }));
   },

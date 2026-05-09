@@ -134,6 +134,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
             {
               name: 'Full ebook',
               path: htmlChapterPath(bookId),
+              contentType: 'html',
             },
           ]
         : [],
@@ -168,7 +169,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
   resolveUrl(path: string) {
     if (path.startsWith(HTML_PREFIX)) {
       const bookId = path.slice(HTML_PREFIX.length);
-      return `${BASE_URL}/ebooks/${bookId}`;
+      return htmlUrlForBook(bookId);
     }
 
     const bookId = path.match(/^ebooks\/(\d+)\.opds$/)?.[1];

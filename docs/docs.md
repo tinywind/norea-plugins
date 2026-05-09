@@ -75,7 +75,7 @@ export default new ExamplePlugin();
 | `pluginSettings` | no | Compatibility alias for hosts that support upstream-style plugin settings. |
 | `popularNovels(pageNo, options)` | yes | Returns a page of source items. |
 | `parseNovel(novelPath)` | yes | Returns metadata and chapter list for one source item. |
-| `parseChapter(chapterPath)` | yes | Returns HTML content for one chapter. |
+| `parseChapter(chapterPath)` | yes | Returns content for one chapter. The chapter row's `contentType` tells the host whether the string is HTML, plain text, or a PDF resource. |
 | `searchNovels(searchTerm, pageNo)` | yes | Returns a page of search results. |
 | `resolveUrl(path, isNovel?)` | no | Converts opaque plugin paths into browser URLs. |
 | `parsePage(novelPath, page)` | page plugins only | Returns additional chapter pages for paginated sources. |
@@ -189,6 +189,7 @@ async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
         name: 'Chapter 1',
         path: `${novelPath}/chapter-1`,
         chapterNumber: 1,
+        contentType: 'html',
       },
     ],
   };
@@ -197,7 +198,13 @@ async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
 
 ### `parseChapter`
 
-`parseChapter` receives a `ChapterItem.path` and returns chapter HTML.
+`parseChapter` receives a `ChapterItem.path` and returns chapter content. For
+`contentType: 'html'`, return reader-ready HTML without source chrome or scripts.
+The Norea host resolves `<img src>` values relative to `resolveUrl(path, false)`
+or the chapter path, downloads those media files locally, and rewrites the saved
+HTML to local media URLs. For `contentType: 'text'`, return raw plain text; the
+host escapes it. For `contentType: 'pdf'`, return a readable HTML fallback or a
+source link while the host records the chapter as a PDF-backed item.
 
 ```ts
 async parseChapter(chapterPath: string): Promise<string> {
@@ -266,6 +273,7 @@ or an encoded payload as long as the same plugin can handle it later.
 | --- | --- | --- | --- |
 | `name` | `string` | yes | Chapter label shown in the reader. |
 | `path` | `string` | yes | Opaque plugin-owned chapter identifier. |
+| `contentType` | `'html'`, `'text'`, or `'pdf'` | no | Per-chapter content type. Defaults to `'html'` for legacy plugins. |
 | `releaseTime` | `string` or `null` | no | ISO date, `YYYY-MM-DD`, or source-provided date string. |
 | `chapterNumber` | `number` | no | Numeric chapter value when the source exposes one. |
 | `page` | `string` | no | Pagination cursor for page-based plugins. |

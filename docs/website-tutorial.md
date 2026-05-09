@@ -24,7 +24,7 @@ The playground has five tabs:
 | Popular | Calls `popularNovels(pageNo, options)` with pagination, latest/popular mode, and filters when present. |
 | Search | Calls `searchNovels(searchTerm, pageNo)`. |
 | Parse Novel | Calls `parseNovel(novelPath)` and displays metadata and chapters. |
-| Parse Chapter | Calls `parseChapter(chapterPath)` and previews returned HTML. |
+| Parse Chapter | Calls `parseChapter(chapterPath)` and previews returned content according to the chapter `contentType`. |
 | Settings | Configures playground request behavior such as user agent, cookies, and fetch mode. This is not the app's per-plugin settings UI. |
 
 Use plugin `path` values in the Parse Novel and Parse Chapter inputs. A `path`
@@ -38,7 +38,7 @@ Before submitting a plugin, verify:
 - Popular and latest listings return expected results.
 - Search returns expected results and empty searches are handled deliberately.
 - Parse Novel returns `name`, `path`, and a chapter list.
-- Parse Chapter returns readable HTML without source chrome, scripts, or broken relative image URLs.
+- Parse Chapter returns content matching the chapter `contentType`: HTML without source chrome or scripts, raw text for text chapters, or a clear PDF fallback/link for PDF chapters.
 - Filters work when implemented.
 - Cover images load or define `imageRequestInit` when needed.
 - No unauthorized copyrighted text, covers, screenshots, or fixtures are added.
