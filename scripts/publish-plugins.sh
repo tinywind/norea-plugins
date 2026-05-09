@@ -12,11 +12,6 @@ if [ "$current" != "main" ]; then
   exit 0
 fi
 
-if git ls-remote --exit-code --heads "$remote" "$dist" >/dev/null 2>&1; then
-  echo "Skipping plugin publish: $remote/$dist already exists."
-  exit 0
-fi
-
 remote_url=$(git remote get-url "$remote")
 repo_path=$(node -e 'const url = process.argv[1]; const match = url.match(/github\.com[:/](.+?)(?:\.git)?$/); if (!match) process.exit(1); console.log(match[1].replace(/^\/+|\/+$/g, ""));' "$remote_url")
 raw_base="https://raw.githubusercontent.com/$repo_path/$dist"
