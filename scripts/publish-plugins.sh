@@ -2,23 +2,30 @@
 set -euo pipefail
 
 remote=${1:-origin}
+base_branch=${2:-}
 current=$(git rev-parse --abbrev-ref HEAD)
 version=$(node -e "console.log(require('./package.json').version);")
-dist="plugins/v$version"
+if [ -z "$base_branch" ]; then
+  base_branch=$current
+fi
+dist="$base_branch-dist/plugins/v$version"
 repo_root=$(git rev-parse --show-toplevel)
 
-if [ "$current" != "main" ]; then
-  echo "Skipping plugin publish: current branch is '$current', not 'main'."
+case "$base_branch" in
+  plugins/*|*/plugins/*)
+  echo "Skipping plugin publish: base branch is '$base_branch'."
   exit 0
-fi
+  ;;
+esac
 
 remote_url=$(git remote get-url "$remote")
 repo_path=$(node -e 'const url = process.argv[1]; const match = url.match(/github\.com[:/](.+?)(?:\.git)?$/); if (!match) process.exit(1); console.log(match[1].replace(/^\/+|\/+$/g, ""));' "$remote_url")
 raw_base="https://raw.githubusercontent.com/$repo_path/$dist"
-worktree="$repo_root/.tmp/publish-$remote-v$version"
-index_file="$repo_root/.tmp/publish-$remote-v$version.index"
 release_ref="refs/remotes/$remote/$dist"
 branch_exists=false
+safe_dist=$(printf '%s' "$dist" | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => console.log(data.replace(/[^a-zA-Z0-9_.-]+/g, "-")));')
+worktree="$repo_root/.tmp/publish-$remote-$safe_dist"
+index_file="$repo_root/.tmp/publish-$remote-$safe_dist.index"
 
 echo "Publishing plugins to $remote/$dist"
 echo "Using USER_CONTENT_BASE=$raw_base"

@@ -6,14 +6,21 @@ cd "$(git rev-parse --show-toplevel)"
 echo "Running pre-push checks..."
 
 remote=${1:-origin}
-publish_plugins=false
+publish_branches=""
 current_branch=$(git branch --show-current)
 
 while read -r local_ref _local_sha remote_ref _remote_sha; do
-  if [ "$remote_ref" = "refs/heads/main" ]; then
-    if [ "$local_ref" = "refs/heads/main" ] || { [ "$local_ref" = "HEAD" ] && [ "$current_branch" = "main" ]; }; then
-      publish_plugins=true
-    fi
+  if [ "${remote_ref#refs/heads/}" != "$remote_ref" ]; then
+    pushed_branch=${remote_ref#refs/heads/}
+    case "$pushed_branch" in
+      plugins/*|*/plugins/*) ;;
+      *) publish_branches="$publish_branches $pushed_branch" ;;
+    esac
+  elif [ "$local_ref" = "HEAD" ] && [ -n "$current_branch" ]; then
+    case "$current_branch" in
+      plugins/*|*/plugins/*) ;;
+      *) publish_branches="$publish_branches $current_branch" ;;
+    esac
   fi
 done
 
@@ -35,6 +42,6 @@ VERSION=$(node -e "console.log(require('./package.json').version)")
 BRANCH="plugins/v$VERSION" npm run build:manifest
 npm run verify:plugins
 
-if [ "$publish_plugins" = true ]; then
-  ./scripts/publish-plugins.sh "$remote"
-fi
+for publish_branch in $publish_branches; do
+  ./scripts/publish-plugins.sh "$remote" "$publish_branch"
+done
