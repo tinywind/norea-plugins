@@ -5,6 +5,18 @@ cd "$(git rev-parse --show-toplevel)"
 
 echo "Running pre-push checks..."
 
+remote=${1:-origin}
+publish_plugins=false
+current_branch=$(git branch --show-current)
+
+while read -r local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    if [ "$local_ref" = "refs/heads/main" ] || { [ "$local_ref" = "HEAD" ] && [ "$current_branch" = "main" ]; }; then
+      publish_plugins=true
+    fi
+  fi
+done
+
 HOOK_DIR=$(dirname "$0")
 "$HOOK_DIR/pre-commit"
 
@@ -22,3 +34,7 @@ npm run build:compile
 VERSION=$(node -e "console.log(require('./package.json').version)")
 BRANCH="plugins/v$VERSION" npm run build:manifest
 npm run verify:plugins
+
+if [ "$publish_plugins" = true ]; then
+  ./scripts/publish-plugins.sh "$remote"
+fi
