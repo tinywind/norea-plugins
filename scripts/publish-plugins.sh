@@ -21,6 +21,13 @@ esac
 remote_url=$(git remote get-url "$remote")
 repo_path=$(node -e 'const url = process.argv[1]; const match = url.match(/github\.com[:/](.+?)(?:\.git)?$/); if (!match) process.exit(1); console.log(match[1].replace(/^\/+|\/+$/g, ""));' "$remote_url")
 raw_base="https://raw.githubusercontent.com/$repo_path/$dist"
+display_raw_base="$raw_base"
+
+if [ "$base_branch" = "private" ] && [ -n "${NOREA_RAW_GITHUB_TOKEN:-}" ]; then
+  raw_base="https://x-access-token:${NOREA_RAW_GITHUB_TOKEN}@raw.githubusercontent.com/$repo_path/$dist"
+  display_raw_base="https://x-access-token:***@raw.githubusercontent.com/$repo_path/$dist"
+fi
+
 release_ref="refs/remotes/$remote/$dist"
 branch_exists=false
 safe_dist=$(printf '%s' "$dist" | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => console.log(data.replace(/[^a-zA-Z0-9_.-]+/g, "-")));')
@@ -28,7 +35,7 @@ worktree="$repo_root/.tmp/publish-$remote-$safe_dist"
 index_file="$repo_root/.tmp/publish-$remote-$safe_dist.index"
 
 echo "Publishing plugins to $remote/$dist"
-echo "Using USER_CONTENT_BASE=$raw_base"
+echo "Using USER_CONTENT_BASE=$display_raw_base"
 
 if git ls-remote --exit-code --heads "$remote" "$dist" >/dev/null 2>&1; then
   branch_exists=true
