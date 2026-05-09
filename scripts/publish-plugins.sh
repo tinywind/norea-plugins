@@ -22,9 +22,18 @@ repo_path=$(node -e 'const url = process.argv[1]; const match = url.match(/githu
 raw_base="https://raw.githubusercontent.com/$repo_path/$dist"
 worktree="$repo_root/.tmp/publish-$remote-v$version"
 index_file="$repo_root/.tmp/publish-$remote-v$version.index"
+release_ref="refs/remotes/$remote/$dist"
+branch_exists=false
 
 echo "Publishing plugins to $remote/$dist"
 echo "Using USER_CONTENT_BASE=$raw_base"
+
+if git ls-remote --exit-code --heads "$remote" "$dist" >/dev/null 2>&1; then
+  branch_exists=true
+  git fetch "$remote" "+refs/heads/$dist:$release_ref" >/dev/null
+else
+  echo "Creating plugin publish branch: $remote/$dist"
+fi
 
 mkdir -p "$repo_root/.tmp"
 rm -rf "$worktree" "$index_file"
@@ -60,7 +69,18 @@ fi
   GIT_INDEX_FILE="$index_file" git read-tree --empty
   GIT_INDEX_FILE="$index_file" git add -f public/static .dist .js total.svg
   tree=$(GIT_INDEX_FILE="$index_file" git write-tree)
-  commit=$(git commit-tree "$tree" -m "chore(plugins): publish plugin manifest")
+
+  parent_args=()
+  if [ "$branch_exists" = true ]; then
+    parent=$(git rev-parse "$release_ref")
+    if [ "$tree" = "$(git rev-parse "$parent^{tree}")" ]; then
+      echo "Skipping plugin publish: generated artifacts already match $remote/$dist."
+      exit 0
+    fi
+    parent_args=(-p "$parent")
+  fi
+
+  commit=$(git commit-tree "$tree" "${parent_args[@]}" -m "chore(plugins): publish plugin manifest")
   git push "$remote" "$commit:refs/heads/$dist"
 )
 
