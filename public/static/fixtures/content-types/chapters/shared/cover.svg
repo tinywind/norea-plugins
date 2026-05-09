@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="240" viewBox="0 0 180 240" role="img" aria-labelledby="title desc">
+  <title id="title">Norea fixture cover</title>
+  <desc id="desc">A small local SVG cover used by the content type fixture plugin.</desc>
+  <rect width="180" height="240" fill="#f4f0e8" />
+  <rect x="18" y="18" width="144" height="204" fill="#2f5d62" />
+  <rect x="34" y="38" width="112" height="164" fill="#ffffff" opacity="0.92" />
+  <text x="90" y="102" text-anchor="middle" font-family="serif" font-size="20" fill="#2f5d62">Norea</text>
+  <text x="90" y="132" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#111827">Fixture</text>
+  <text x="90" y="154" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#374151">HTML Text PDF</text>
+</svg>

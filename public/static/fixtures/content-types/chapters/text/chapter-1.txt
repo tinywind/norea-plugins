@@ -1,0 +1,6 @@
+Plain text fixture chapter
+
+This content is intentionally raw text. It is not wrapped in HTML, and the host
+should escape and format it as plain text when the chapter contentType is text.
+
+Line breaks and punctuation are part of the fixture.
