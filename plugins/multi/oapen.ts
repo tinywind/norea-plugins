@@ -47,8 +47,7 @@ function requestInit(accept = 'application/json') {
   return {
     headers: {
       Accept: accept,
-      'User-Agent':
-        'Norea/0.1 (+https://github.com/tinywind/norea)',
+      'User-Agent': 'Norea/0.1 (+https://github.com/tinywind/norea)',
     },
     contextUrl: REST_CONTEXT_URL,
   };
@@ -212,7 +211,9 @@ class OapenLibrary implements Plugin.PluginBase {
     }
 
     const recordUrl = itemRecordUrl(item);
-    const readableBitstreams = (item.bitstreams ?? []).filter(readableBitstream);
+    const readableBitstreams = (item.bitstreams ?? []).filter(
+      readableBitstream,
+    );
     const bitstreams = readableBitstreams
       .map((bitstream, index) => ({
         bitstream,

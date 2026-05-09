@@ -9,11 +9,11 @@ import { inputs } from '@libs/pluginInputs';
 const DISPLAY_SITE = 'https://komga.org/';
 const URL_SETTING_KEY = 'url';
 
-interface RequestOptions {
+type RequestOptions = {
   method?: string;
   body?: unknown;
   accept?: string;
-}
+};
 
 type SeriesSearchCondition = Record<string, unknown>;
 

@@ -40,10 +40,12 @@ const globalsHermes = [
   'ReferenceError',
   'Reflect',
   'RegExp',
+  'Response',
   'Set',
   'String',
   'Symbol',
   'SyntaxError',
+  'TextDecoder',
   'TimeoutError',
   'TypeError',
   'URIError',
@@ -137,7 +139,7 @@ export default tseslint.config(
     ],
   },
   {
-    files: ['./plugins/*/*.ts'],
+    files: ['plugins/*/*.ts'],
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
@@ -166,7 +168,7 @@ export default tseslint.config(
   },
   {
     files: ['**/*.{ts,tsx,mts,cts,js}'],
-    ignores: ['./plugins/*/*.ts'],
+    ignores: ['plugins/*/*.ts'],
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
@@ -192,6 +194,12 @@ export default tseslint.config(
         ...globals.serviceworker,
         ...globals.browser,
       },
+    },
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 );

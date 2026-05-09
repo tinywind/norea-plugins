@@ -8,8 +8,7 @@ const BASE_URL = 'https://www.gutenberg.org';
 const SITE_URL = `${BASE_URL}/`;
 const PAGE_SIZE = 25;
 const HTML_PREFIX = 'gutenberg-html:';
-const USER_AGENT =
-  'Norea/0.1 (+https://github.com/tinywind/norea)';
+const USER_AGENT = 'Norea/0.1 (+https://github.com/tinywind/norea)';
 type CheerioSelection = ReturnType<CheerioAPI>;
 
 function requestInit(accept: string) {
@@ -219,10 +218,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
     return ebookEntry;
   }
 
-  private parseEbookMetadata(
-    $: CheerioAPI,
-    entry: CheerioSelection,
-  ) {
+  private parseEbookMetadata($: CheerioAPI, entry: CheerioSelection) {
     const content = entry.children('content').first().text();
     const author =
       cleanText(entry.children('author').first().find('name').text()) ||

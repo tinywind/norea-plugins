@@ -37,8 +37,7 @@ function requestInit(accept: string) {
   return {
     headers: {
       Accept: accept,
-      'User-Agent':
-        'Norea/0.1 (+https://github.com/tinywind/norea)',
+      'User-Agent': 'Norea/0.1 (+https://github.com/tinywind/norea)',
     },
   };
 }
