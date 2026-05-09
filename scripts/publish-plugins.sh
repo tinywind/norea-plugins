@@ -68,10 +68,6 @@ fi
   parent_args=()
   if [ "$branch_exists" = true ]; then
     parent=$(git rev-parse "$release_ref")
-    if [ "$tree" = "$(git rev-parse "$parent^{tree}")" ]; then
-      echo "Skipping plugin publish: generated artifacts already match $remote/$dist."
-      exit 0
-    fi
     parent_args=(-p "$parent")
   fi
 
