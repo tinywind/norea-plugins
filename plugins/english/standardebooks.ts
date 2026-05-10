@@ -31,7 +31,9 @@ class StandardEbooks implements Plugin.PluginBase {
   name = 'Standard Ebooks';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
-  site = SITE;
+  getBaseUrl(): string {
+    return SITE;
+  }
 
   async popularNovels(pageNo: number): Promise<Plugin.NovelItem[]> {
     const url = `${BASE_URL}/ebooks?sort=popularity&page=${pageNo}`;

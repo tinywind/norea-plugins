@@ -68,14 +68,6 @@ function compareVersions(a, b) {
   return 0;
 }
 
-function manifestSite(id, site) {
-  if (id === 'dev-content-type-fixture' && INCLUDE_DEV_PLUGINS) {
-    return `${USER_CONTENT_LINK}/static/fixtures/content-types/`;
-  }
-
-  return site;
-}
-
 const createRecursiveProxy = () => {
   const target = {};
   const handler = {
@@ -126,8 +118,7 @@ for (let language in manifestLanguages) {
       ${rawCode};
       return exports.default`,
     )(_require, {});
-    const { id, name, site, version, icon, customJS, customCSS, filters } =
-      instance;
+    const { id, name, version, icon, customJS, customCSS, filters } = instance;
     const normalisedName = name.replace(/\[.*\]/, '');
 
     // --only-new logic
@@ -143,7 +134,6 @@ for (let language in manifestLanguages) {
     const info = {
       id,
       name: normalisedName,
-      site: manifestSite(id, site),
       lang: manifestLanguages[language],
       version,
       url: `${PLUGIN_LINK}/${language.toLowerCase()}/${plugin}`,

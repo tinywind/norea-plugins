@@ -61,11 +61,10 @@ const notAvailableImage = fs.readFileSync(
   }
   const plugins = JSON.parse(fs.readFileSync(plugin_path, 'utf-8'));
 
-  console.log('\nDownloading icons ⌛');
+  console.log('\nChecking icons ⌛');
   let language;
   for (let plugin in plugins) {
-    const { id, name, site, iconUrl, lang, customJS, customCSS } =
-      plugins[plugin];
+    const { id, name, iconUrl, lang, customJS, customCSS } = plugins[plugin];
     const icon = iconUrl && path.join(folder, iconUrl.split('/static/')[1]);
 
     if (language !== lang) {
@@ -85,38 +84,36 @@ const notAvailableImage = fs.readFileSync(
         used.add(path.join(folder, customCSS.split('/static/')[1]));
       }
       if (icon) used.add(icon);
-      if (!skip.has(id) && icon && site) {
-        const image = await fetch(
-          `https://www.google.com/s2/favicons?domain=${site}&sz=${size}&type=png`,
-        )
-          .then(res => res.arrayBuffer())
-          .then(res => Buffer.from(res));
+      if (!skip.has(id) && icon) {
+        if (!fs.existsSync(icon)) {
+          console.log(
+            '  ',
+            name.padEnd(26),
+            `(${id})`.padEnd(20),
+            'Missing icon',
+            '\r❌',
+          );
+          continue;
+        }
+        const image = fs.readFileSync(icon);
 
         if (Buffer.compare(image, notAvailableImage) === 0) {
           console.log(
             '  ',
             name.padEnd(26),
             `(${id})`.padEnd(20),
-            'Is site down?',
+            'Placeholder icon',
             '\r❌',
           );
           continue;
         }
 
         const imageSize = sizeOf(image);
-        const exist = fs.existsSync(icon);
-
-        if (!exist) {
-          const dir = path.dirname(icon);
-          fs.mkdirSync(dir, { recursive: true });
-        }
 
         if (
-          ((imageSize?.width || size) > minSize &&
-            (imageSize?.height || size) > minSize) ||
-          !exist
+          (imageSize?.width || size) > minSize &&
+          (imageSize?.height || size) > minSize
         ) {
-          fs.writeFileSync(icon, image);
           console.log('  ', name.padEnd(26), `(${id})`, '\r✅');
         } else {
           console.log(

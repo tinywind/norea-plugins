@@ -83,7 +83,9 @@ class KomgaPlugin implements Plugin.PluginBase {
   icon = 'src/multi/komga/icon.png';
   version = '1.0.3';
 
-  site = DISPLAY_SITE;
+  getBaseUrl(): string {
+    return this.configuredServerUrl() || DISPLAY_SITE;
+  }
 
   private inputValue(key: string) {
     return cleanText(inputs.get(key) ?? storage.get(key));

@@ -56,7 +56,6 @@ export namespace Plugin {
     name: string;
     version: string;
     icon: string;
-    site: string;
   };
   export type ImageRequestInit = {
     method?: string;
@@ -86,7 +85,6 @@ export namespace Plugin {
     icon: string;
     customJS?: string;
     customCSS?: string;
-    site: string;
     imageRequestInit?: ImageRequestInit;
     filters?: Filters;
     pluginInputs?: PluginInputSchema;
@@ -94,6 +92,7 @@ export namespace Plugin {
     version: string;
     //flag indicates whether access to LocalStorage, SesesionStorage is required.
     webStorageUtilized?: boolean;
+    getBaseUrl(): string;
     popularNovels(
       pageNo: number,
       options: PopularNovelsOptions<Filters>,

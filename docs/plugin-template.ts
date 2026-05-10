@@ -14,7 +14,9 @@ class TemplatePlugin implements Plugin.PluginBase {
   id = '';
   name = '';
   icon = '';
-  site = 'https://example.com';
+  getBaseUrl(): string {
+    return 'https://example.com';
+  }
   version = '1.0.0';
   filters: Filters | undefined = undefined;
   imageRequestInit?: Plugin.ImageRequestInit | undefined = undefined;
@@ -90,7 +92,7 @@ class TemplatePlugin implements Plugin.PluginBase {
   }
 
   resolveUrl = (path: string, isNovel?: boolean) =>
-    this.site + (isNovel ? '/book/' : '/chapter/') + path;
+    this.getBaseUrl() + (isNovel ? '/book/' : '/chapter/') + path;
 }
 
 export default new TemplatePlugin();

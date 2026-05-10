@@ -186,7 +186,9 @@ class OapenLibrary implements Plugin.PluginBase {
   name = 'OAPEN Library';
   version = '0.1.1';
   icon = 'siteNotAvailable.png';
-  site = SITE_URL;
+  getBaseUrl(): string {
+    return SITE_URL;
+  }
 
   async popularNovels(pageNo: number) {
     return this.searchItems('dc.type:book', pageNo);

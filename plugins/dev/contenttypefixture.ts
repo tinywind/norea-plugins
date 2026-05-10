@@ -25,7 +25,9 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
   name = 'Dev Content Type Fixture';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
-  site = `${DEFAULT_BASE_URL}/${FIXTURE_PATH}`;
+  getBaseUrl(): string {
+    return fixtureRootUrl();
+  }
   pluginInputs = {
     [BASE_URL_INPUT]: {
       label: 'Fixture server base URL',
@@ -108,9 +110,7 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
   }
 
   private fixtureRootUrl(): string {
-    const rootUrl = fixtureRootUrl();
-    this.site = rootUrl;
-    return rootUrl;
+    return fixtureRootUrl();
   }
 }
 

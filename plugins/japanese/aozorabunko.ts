@@ -178,7 +178,9 @@ class AozoraBunko implements Plugin.PluginBase {
   name = 'Aozora Bunko';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
-  site = SITE_URL;
+  getBaseUrl(): string {
+    return SITE_URL;
+  }
 
   async popularNovels(pageNo: number) {
     const catalog = await this.catalog();

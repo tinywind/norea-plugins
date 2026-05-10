@@ -36,7 +36,9 @@ class ExamplePlugin implements Plugin.PluginBase {
   id = 'example';
   name = 'Example';
   icon = 'siteNotAvailable.png';
-  site = 'https://example.com/';
+  getBaseUrl(): string {
+    return 'https://example.com/';
+  }
   version = '1.0.0';
 
   async popularNovels(pageNo: number): Promise<Plugin.NovelItem[]> {
@@ -67,7 +69,7 @@ export default new ExamplePlugin();
 | `id` | yes | Stable plugin id. Must match the repository manifest entry. |
 | `name` | yes | Display name shown in the app. |
 | `icon` | yes | Path under `public/static`, without the `public/static/` prefix. |
-| `site` | yes | Canonical source URL used by the host for display and fetch context. |
+| `getBaseUrl()` | yes | Returns the runtime base URL used by the host for navigation, URL fallback, and fetch context. |
 | `version` | yes | Semver-style plugin version. |
 | `imageRequestInit` | no | Extra request init for cover image requests. |
 | `filters` | no | Filter schema used by `popularNovels`. |
@@ -112,18 +114,18 @@ Use 96x96 px PNG icons where possible. If no icon is available, use:
 icon = 'siteNotAvailable.png';
 ```
 
-### `site`
+### `getBaseUrl()`
 
-For public sources, use the real source origin.
+For public sources, return the real source origin.
 
 ```ts
-site = 'https://standardebooks.org/';
+getBaseUrl(): string {
+  return 'https://standardebooks.org/';
+}
 ```
 
-For self-hosted connectors, use a stable product or documentation URL in the
-manifest, and read the user's server URL from settings or storage at request
-time. Do not put placeholder values such as `url` in `site`; the app may use
-`site` as a fetch context.
+For self-hosted connectors, read the user's server URL from settings or storage
+at request time. Return a non-empty absolute `http` or `https` URL.
 
 ### `version`
 
@@ -208,7 +210,7 @@ source link while the host records the chapter as a PDF-backed item.
 
 ```ts
 async parseChapter(chapterPath: string): Promise<string> {
-  const response = await fetchApi(new URL(chapterPath, this.site).href);
+  const response = await fetchApi(new URL(chapterPath, this.getBaseUrl()).href);
   const html = await response.text();
   const $ = parseHTML(html);
   return $('main').html() || '';
@@ -407,7 +409,7 @@ const data = JSON.parse(await response.text());
 const html = await fetchText('https://example.com/book/1');
 ```
 
-When a request should use a different browser preparation URL than `plugin.site`,
+When a request should use a different browser preparation URL than `getBaseUrl()`,
 pass `contextUrl`. This is useful for official REST APIs whose homepage is slow
 or unrelated to API fetches.
 

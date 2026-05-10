@@ -73,7 +73,9 @@ class ProjectGutenberg implements Plugin.PluginBase {
   name = 'Project Gutenberg';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
-  site = SITE_URL;
+  getBaseUrl(): string {
+    return SITE_URL;
+  }
 
   async popularNovels(pageNo: number) {
     const url = `${BASE_URL}/ebooks/search.opds/?sort_order=downloads&start_index=${pageStart(
