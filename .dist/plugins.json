@@ -2,7 +2,6 @@
 	{
 		"id": "projectgutenberg",
 		"name": "Project Gutenberg",
-		"site": "https://www.gutenberg.org/",
 		"lang": "English",
 		"version": "0.1.0",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/english/projectgutenberg.js",
@@ -11,7 +10,6 @@
 	{
 		"id": "standardebooks",
 		"name": "Standard Ebooks",
-		"site": "https://standardebooks.org/",
 		"lang": "English",
 		"version": "0.1.0",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/english/standardebooks.js",
@@ -20,7 +18,6 @@
 	{
 		"id": "aozorabunko",
 		"name": "Aozora Bunko",
-		"site": "https://www.aozora.gr.jp/",
 		"lang": "Japanese",
 		"version": "0.1.0",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/japanese/aozorabunko.js",
@@ -29,7 +26,6 @@
 	{
 		"id": "komga",
 		"name": "Komga",
-		"site": "https://komga.org/",
 		"lang": "Multi",
 		"version": "1.0.3",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/multi/komga.js",
@@ -38,7 +34,6 @@
 	{
 		"id": "oapen",
 		"name": "OAPEN Library",
-		"site": "https://library.oapen.org/",
 		"lang": "Multi",
 		"version": "0.1.1",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/multi/oapen.js",

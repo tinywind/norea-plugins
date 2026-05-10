@@ -71,7 +71,6 @@ var ContentTypeFixturePlugin = /** @class */ (function () {
         this.name = 'Dev Content Type Fixture';
         this.version = '0.1.0';
         this.icon = 'siteNotAvailable.png';
-        this.site = "".concat(DEFAULT_BASE_URL, "/").concat(FIXTURE_PATH);
         this.pluginInputs = (_a = {},
             _a[BASE_URL_INPUT] = {
                 label: 'Fixture server base URL',
@@ -81,6 +80,9 @@ var ContentTypeFixturePlugin = /** @class */ (function () {
             },
             _a);
     }
+    ContentTypeFixturePlugin.prototype.getBaseUrl = function () {
+        return fixtureRootUrl();
+    };
     ContentTypeFixturePlugin.prototype.popularNovels = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -160,9 +162,7 @@ var ContentTypeFixturePlugin = /** @class */ (function () {
         };
     };
     ContentTypeFixturePlugin.prototype.fixtureRootUrl = function () {
-        var rootUrl = fixtureRootUrl();
-        this.site = rootUrl;
-        return rootUrl;
+        return fixtureRootUrl();
     };
     return ContentTypeFixturePlugin;
 }());
