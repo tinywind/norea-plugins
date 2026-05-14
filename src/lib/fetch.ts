@@ -1,6 +1,4 @@
-/* global Buffer, RequestInit */
-
-import { parse as parseProto } from 'protobufjs';
+/* global RequestInit */
 
 import { log, redactLogPayload } from './log';
 
@@ -44,6 +42,18 @@ const makeInit = async (init?: FetchInit) => {
   return init;
 };
 
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(offset, offset + chunkSize),
+    );
+  }
+  return btoa(binary);
+};
+
 /**
  * Fetch with (Android) User Agent
  * @param url
@@ -70,7 +80,7 @@ export const fetchFile = async function (url: string, init?: FetchInit) {
     const res = await fetch(url, init as RequestInit);
     if (!res.ok) return '';
     const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer).toString('base64');
+    return arrayBufferToBase64(arrayBuffer);
   } catch (e) {
     return '';
   }
@@ -117,7 +127,8 @@ export const fetchProto = async function <ReturnType>(
   url: string,
   init?: FetchInit,
 ) {
-  const protoRoot = parseProto(protoInit.proto).root;
+  const { default: protobuf } = await import('protobufjs');
+  const protoRoot = protobuf.parse(protoInit.proto).root;
   const RequestMessge = protoRoot.lookupType(protoInit.requestType);
   if (RequestMessge.verify(protoInit.requestData)) {
     throw new Error('Invalid Proto');

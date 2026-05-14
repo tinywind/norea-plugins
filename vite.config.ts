@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import tailwindcss from '@tailwindcss/vite';
@@ -12,8 +11,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    nodePolyfills(),
-    react({ devTarget: 'es5' }),
+    react(),
     {
       name: 'proxy',
       configureServer: server => {
