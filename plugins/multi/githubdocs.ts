@@ -1,6 +1,6 @@
 import { load as parseHTML } from 'cheerio';
 
-import { fetchApi } from '@libs/fetch';
+import { appFetch } from '@libs/fetch';
 import { inputs } from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
 
@@ -898,7 +898,7 @@ class GitHubDocs implements Plugin.PluginBase {
     };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetchApi(`${API_URL}${path}`, {
+    const response = await appFetch(`${API_URL}${path}`, {
       method: init.method ?? 'GET',
       headers,
       body: init.body,

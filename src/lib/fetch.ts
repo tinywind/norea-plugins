@@ -67,6 +67,15 @@ export async function fetchApi(url: string, init?: FetchInit) {
 }
 
 /**
+ * App-native HTTP fetch in the Norea host.
+ * The local playground falls back to the browser fetch implementation.
+ */
+export async function appFetch(url: string, init?: FetchInit) {
+  log.debug('fetch.app.request', redactLogPayload({ url, init }));
+  return await fetch(url, init as RequestInit);
+}
+
+/**
  *
  * @param url
  * @param init

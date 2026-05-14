@@ -28,6 +28,10 @@ Current source plugins must provide `parseNovel()`, `parseNovelSince(novelPath, 
 Norea's `Add GitHub source` flow, and each installed source instance maps one
 GitHub repository folder to one Norea work.
 
+GitHub REST API requests use `@libs/fetch.appFetch`, the Norea host's
+app-native HTTP path. Ordinary website plugins should keep using `fetchApi` so
+their traffic stays on the scraper WebView session path.
+
 Required fields:
 
 | Field | Meaning |

@@ -489,9 +489,22 @@ const data = JSON.parse(await response.text());
 const html = await fetchText('https://example.com/book/1');
 ```
 
-When a request should use a different browser preparation URL than `getBaseUrl()`,
-pass `contextUrl`. This is useful for official REST APIs whose homepage is slow
-or unrelated to API fetches.
+Use `appFetch` only for official API or repository-owned requests that should
+use the host's app-native HTTP path instead of the scraper WebView session.
+
+```ts
+import { appFetch } from '@libs/fetch';
+
+const response = await appFetch('https://api.github.com/repos/owner/repo', {
+  headers: {
+    Accept: 'application/vnd.github+json',
+  },
+});
+```
+
+When a scraper-backed request should use a different browser preparation URL
+than `getBaseUrl()`, pass `contextUrl`. This is useful for source APIs whose
+homepage is slow or unrelated to API fetches.
 
 ```ts
 await fetchApi('https://library.oapen.org/rest/search?query=dc.type:book', {
