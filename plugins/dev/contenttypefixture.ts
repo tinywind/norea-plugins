@@ -23,7 +23,7 @@ function fixtureRootUrl(): string {
 class ContentTypeFixturePlugin implements Plugin.PluginBase {
   id = 'dev-content-type-fixture';
   name = 'Dev Content Type Fixture';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return fixtureRootUrl();
@@ -97,6 +97,29 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
       contextUrl: rootUrl,
     });
     return response.text();
+  }
+
+  async parseChapterResource(
+    chapterPath: string,
+  ): Promise<Plugin.ChapterBinaryResource> {
+    if (!chapterPath.endsWith('/chapters/pdf/chapter-1.pdf')) {
+      throw new Error('Fixture chapter is not a PDF resource.');
+    }
+
+    const response = await fetchApi(chapterPath, {
+      contextUrl: this.fixtureRootUrl(),
+      headers: { Accept: 'application/pdf, */*' },
+    });
+    const bytes = await response.arrayBuffer();
+
+    return {
+      type: 'binary',
+      contentType: 'pdf',
+      mediaType: 'application/pdf',
+      filename: 'chapter-1.pdf',
+      byteLength: bytes.byteLength,
+      bytes,
+    };
   }
 
   resolveUrl(path: string) {
