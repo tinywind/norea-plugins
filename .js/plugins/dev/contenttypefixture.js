@@ -130,6 +130,13 @@ var ContentTypeFixturePlugin = /** @class */ (function () {
             });
         });
     };
+    ContentTypeFixturePlugin.prototype.parseNovelSince = function (novelPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this.parseNovel(novelPath)];
+            });
+        });
+    };
     ContentTypeFixturePlugin.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
             var rootUrl, response;
