@@ -29,7 +29,8 @@
 		"lang": "Multi",
 		"version": "0.1.0",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/multi/githubdocs.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png"
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png",
+		"installMode": "multiSource"
 	},
 	{
 		"id": "komga",
