@@ -16,6 +16,9 @@ config.json
 .claude/logs/
 .claude/tmp/
 
+# Serena local-only state
+.serena/
+
 # Local temporary files
 .tmp/
 *.log
