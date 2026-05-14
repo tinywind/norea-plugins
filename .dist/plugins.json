@@ -44,7 +44,7 @@
 		"id": "oapen",
 		"name": "OAPEN Library",
 		"lang": "Multi",
-		"version": "0.1.1",
+		"version": "0.1.3",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/.js/plugins/multi/oapen.js",
 		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png"
 	}
