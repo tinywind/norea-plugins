@@ -54,6 +54,11 @@ Every source plugin must implement both `parseNovel()` and
 unique `chapterNumber`. Use the source-provided chapter number when one exists;
 otherwise calculate a one-based reading-order number in the plugin.
 
+PDF and EPUB chapters should set `contentType` to `pdf` or `epub`. Keep
+`parseChapter()` as a readable HTML fallback and implement
+`parseChapterResource()` when the plugin can pass the actual binary bytes as an
+`ArrayBuffer` or `Uint8Array`.
+
 When a source needs a rendered scraper WebView page rather than a browser fetch,
 use `@libs/webView` helpers. The canonical contract defines
 `webViewFetch()`, `webViewLoad()`, and `webViewNavigate()`.

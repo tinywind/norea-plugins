@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, FileText, Code } from 'lucide-react';
+import { Copy, FileText, Code, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,23 @@ function chapterContentToHtml(
   return content;
 }
 
+type LoadedBinaryResource = Plugin.ChapterBinaryResource & {
+  objectUrl: string;
+};
+
+function bytesToBlob(resource: Plugin.ChapterBinaryResource) {
+  return new Blob([resource.bytes], { type: resource.mediaType });
+}
+
+function downloadResource(resource: LoadedBinaryResource) {
+  const link = document.createElement('a');
+  link.href = resource.objectUrl;
+  link.download = resource.filename || `chapter.${resource.contentType}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export default function ParseChapterSection() {
   const plugin = useAppStore(state => state.plugin);
   const parseChapterPath = useAppStore(state => state.parseChapterPath);
@@ -49,6 +66,7 @@ export default function ParseChapterSection() {
   );
   const [chapterPath, setChapterPath] = useState('');
   const [chapterText, setChapterText] = useState('');
+  const [binaryResource, setBinaryResource] = useState<LoadedBinaryResource>();
   const [chapterContentType, setChapterContentType] =
     useState<Plugin.ChapterContentType>('html');
   const [loading, setLoading] = useState(false);
@@ -56,6 +74,7 @@ export default function ParseChapterSection() {
   const [showRawHtml, setShowRawHtml] = useState(false);
 
   const chapterHtml = chapterContentToHtml(chapterText, chapterContentType);
+  const hasChapterContent = chapterText || binaryResource;
   const { customCSSLoaded, customJSLoaded, customCSSError, customJSError } =
     usePluginCustomAssets(plugin, chapterHtml);
 
@@ -66,10 +85,23 @@ export default function ParseChapterSection() {
     if (plugin && path.trim()) {
       setLoading(true);
       setFetchError('');
+      setChapterText('');
+      setBinaryResource(undefined);
       try {
-        const result = await plugin.parseChapter(path);
-        setChapterText(result);
-        setChapterContentType(contentType);
+        if (
+          (contentType === 'pdf' || contentType === 'epub') &&
+          plugin.parseChapterResource
+        ) {
+          const result = await plugin.parseChapterResource(path);
+          const objectUrl = URL.createObjectURL(bytesToBlob(result));
+          setBinaryResource({ ...result, objectUrl });
+          setChapterText(result.fallbackHtml || '');
+          setChapterContentType(result.contentType);
+        } else {
+          const result = await plugin.parseChapter(path);
+          setChapterText(result);
+          setChapterContentType(contentType);
+        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch chapter';
@@ -99,6 +131,13 @@ export default function ParseChapterSection() {
   };
 
   // Handle pre-filled path from navigation
+  useEffect(() => {
+    return () => {
+      if (binaryResource?.objectUrl)
+        URL.revokeObjectURL(binaryResource.objectUrl);
+    };
+  }, [binaryResource?.objectUrl]);
+
   useEffect(() => {
     if (parseChapterPath) {
       setChapterPath(parseChapterPath);
@@ -157,12 +196,26 @@ export default function ParseChapterSection() {
             value={chapterPath}
             onChange={e => {
               setChapterPath(e.target.value);
-              setChapterContentType('html');
             }}
             onKeyPress={handleKeyPress}
             className="flex-1"
             disabled={!plugin}
           />
+          <select
+            value={chapterContentType}
+            onChange={event =>
+              setChapterContentType(
+                event.target.value as Plugin.ChapterContentType,
+              )
+            }
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            disabled={!plugin || loading}
+          >
+            <option value="html">HTML</option>
+            <option value="text">Text</option>
+            <option value="pdf">PDF</option>
+            <option value="epub">EPUB</option>
+          </select>
           <Button
             onClick={fetchChapter}
             disabled={!plugin || !chapterPath.trim() || loading}
@@ -177,7 +230,7 @@ export default function ParseChapterSection() {
           </div>
         )}
 
-        {loading && !chapterText ? (
+        {loading && !hasChapterContent ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex-1 space-y-2">
@@ -201,7 +254,7 @@ export default function ParseChapterSection() {
               </div>
             </div>
           </div>
-        ) : !chapterText ? (
+        ) : !hasChapterContent ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <div className="rounded-full bg-muted p-4 mb-4">
               <FileText className="w-8 h-8 text-muted-foreground" />
@@ -215,7 +268,7 @@ export default function ParseChapterSection() {
                 : 'Please select a plugin from the sidebar to get started.'}
             </p>
           </div>
-        ) : chapterText ? (
+        ) : hasChapterContent ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -227,16 +280,18 @@ export default function ParseChapterSection() {
                 </p>
               </div>
               <div className="flex gap-2 items-center">
-                <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-muted/50">
-                  <Code className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Raw Content
-                  </span>
-                  <Switch
-                    checked={showRawHtml}
-                    onCheckedChange={setShowRawHtml}
-                  />
-                </div>
+                {!binaryResource && (
+                  <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-muted/50">
+                    <Code className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Raw Content
+                    </span>
+                    <Switch
+                      checked={showRawHtml}
+                      onCheckedChange={setShowRawHtml}
+                    />
+                  </div>
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -255,36 +310,76 @@ export default function ParseChapterSection() {
                     <p>Copy chapter path to clipboard</p>
                   </TooltipContent>
                 </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 bg-transparent"
-                      onClick={() =>
-                        copyToClipboard(chapterText, 'Chapter text')
-                      }
-                    >
-                      <Copy className="w-4 h-4" />
-                      Copy Text
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy chapter text to clipboard</p>
-                  </TooltipContent>
-                </Tooltip>
+                {binaryResource ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 bg-transparent"
+                    onClick={() => downloadResource(binaryResource)}
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-transparent"
+                        onClick={() =>
+                          copyToClipboard(chapterText, 'Chapter text')
+                        }
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy Text
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy chapter text to clipboard</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </div>
 
             <div className="border border-border rounded-lg">
               <div className="bg-muted/50 rounded-t-lg px-4 py-2 border-b border-border">
                 <p className="text-xs text-muted-foreground font-medium">
-                  {showRawHtml ? 'RAW CONTENT' : 'CHAPTER CONTENT'} (
-                  {chapterText.length} characters)
+                  {binaryResource
+                    ? `${binaryResource.contentType.toUpperCase()} RESOURCE (${binaryResource.byteLength} bytes)`
+                    : `${showRawHtml ? 'RAW CONTENT' : 'CHAPTER CONTENT'} (${chapterText.length} characters)`}
                 </p>
               </div>
               <div className="bg-background rounded-b-lg p-6 max-h-[600px] overflow-y-auto">
-                {showRawHtml ? (
+                {binaryResource ? (
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>Media type: {binaryResource.mediaType}</p>
+                      {binaryResource.filename && (
+                        <p>Filename: {binaryResource.filename}</p>
+                      )}
+                    </div>
+                    {binaryResource.contentType === 'pdf' ? (
+                      <iframe
+                        title={binaryResource.filename || 'PDF chapter'}
+                        src={binaryResource.objectUrl}
+                        className="w-full h-[520px] rounded border border-border"
+                      />
+                    ) : (
+                      <div className="rounded border border-border p-4 text-sm text-muted-foreground">
+                        EPUB preview is not available in this view. Download the
+                        resource to open it in an EPUB reader.
+                      </div>
+                    )}
+                    {chapterHtml && (
+                      <div
+                        className="prose prose-sm dark:prose-invert max-w-none text-foreground"
+                        dangerouslySetInnerHTML={{ __html: chapterHtml }}
+                      />
+                    )}
+                  </div>
+                ) : showRawHtml ? (
                   <pre className="text-xs text-foreground font-mono whitespace-pre-wrap break-words">
                     {chapterText}
                   </pre>
@@ -346,6 +441,7 @@ export default function ParseChapterSection() {
                 size="sm"
                 onClick={() => {
                   setChapterText('');
+                  setBinaryResource(undefined);
                   setChapterPath('');
                   setShowRawHtml(false);
                 }}

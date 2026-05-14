@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plugin } from '@/types/plugin';
 import { createEpub, downloadBlob } from '@/lib/epub';
+import type { ChapterData } from '@/lib/epub';
 
 type UseEpubExportOptions = {
   plugin: Plugin.PluginBase | null;
@@ -24,6 +25,20 @@ function chapterContentToHtml(chapter: Plugin.ChapterItem, content: string) {
     return `<pre>${escapeHtml(content)}</pre>`;
   }
   return content;
+}
+
+function binaryFallbackHtml(resource: Plugin.ChapterBinaryResource) {
+  const label = resource.contentType.toUpperCase();
+  return [
+    '<article>',
+    `<p>${label} binary resource is attached to this export.</p>`,
+    resource.filename
+      ? `<p>Filename: ${escapeHtml(resource.filename)}</p>`
+      : '',
+    '</article>',
+  ]
+    .filter(Boolean)
+    .join('');
 }
 
 export function useEpubExport({
@@ -85,24 +100,33 @@ export function useEpubExport({
         description: `0/${allChapters.length} chapters processed`,
       });
 
-      const chapterContents: {
-        title: string;
-        content: string;
-        path: string;
-      }[] = [];
+      const chapterContents: ChapterData[] = [];
 
       for (let i = 0; i < allChapters.length; i++) {
         const chapter = allChapters[i];
         try {
-          const content = chapterContentToHtml(
-            chapter,
-            await plugin.parseChapter(chapter.path),
-          );
-          chapterContents.push({
-            title: chapter.name,
-            content: content || '<p>No content available</p>',
-            path: chapter.path,
-          });
+          if (
+            (chapter.contentType === 'pdf' || chapter.contentType === 'epub') &&
+            plugin.parseChapterResource
+          ) {
+            const resource = await plugin.parseChapterResource(chapter.path);
+            chapterContents.push({
+              title: chapter.name,
+              content: resource.fallbackHtml || binaryFallbackHtml(resource),
+              path: chapter.path,
+              binaryResource: resource,
+            });
+          } else {
+            const content = chapterContentToHtml(
+              chapter,
+              await plugin.parseChapter(chapter.path),
+            );
+            chapterContents.push({
+              title: chapter.name,
+              content: content || '<p>No content available</p>',
+              path: chapter.path,
+            });
+          }
 
           const progress = Math.round(((i + 1) / allChapters.length) * 100);
           toast.loading('Fetching chapter content...', {

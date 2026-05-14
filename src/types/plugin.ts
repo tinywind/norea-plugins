@@ -1,6 +1,20 @@
 import { FilterToValues, Filters } from '@libs/filterInputs';
 export namespace Plugin {
-  export type ChapterContentType = 'html' | 'text' | 'pdf';
+  export type ChapterContentType = 'html' | 'text' | 'pdf' | 'epub';
+  export type ChapterBinaryMediaType =
+    | 'application/pdf'
+    | 'application/epub+zip';
+
+  export type ChapterBinaryResource = {
+    type: 'binary';
+    contentType: Extract<ChapterContentType, 'pdf' | 'epub'>;
+    mediaType: ChapterBinaryMediaType;
+    filename?: string;
+    byteLength: number;
+    bytes: ArrayBuffer | Uint8Array;
+    sha256?: string;
+    fallbackHtml?: string;
+  };
 
   export type ChapterItem = {
     name: string;
@@ -109,6 +123,8 @@ export namespace Plugin {
     ): Promise<SourceNovel>;
     /** Return content matching the chapter row's contentType. */
     parseChapter(chapterPath: string): Promise<string>;
+    /** Return binary content for PDF/EPUB chapters when supported. */
+    parseChapterResource?(chapterPath: string): Promise<ChapterBinaryResource>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
     resolveUrl?(path: string, isNovel?: boolean): string;
   };

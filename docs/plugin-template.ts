@@ -90,10 +90,25 @@ class TemplatePlugin implements Plugin.PluginBase {
     };
   }
   async parseChapter(chapterPath: string): Promise<string> {
-    // Parse chapter content here. Return raw text only when chapter.contentType is "text".
+    // Parse string chapter content here. Return raw text only when chapter.contentType is "text".
+    // PDF/EPUB plugins can additionally implement parseChapterResource().
     const chapterHtml = '';
     return chapterHtml;
   }
+  // async parseChapterResource(
+  //   chapterPath: string,
+  // ): Promise<Plugin.ChapterBinaryResource> {
+  //   const response = await fetchApi(this.resolveUrl(chapterPath));
+  //   const bytes = await response.arrayBuffer();
+  //   return {
+  //     type: 'binary',
+  //     contentType: 'pdf',
+  //     mediaType: 'application/pdf',
+  //     filename: 'chapter.pdf',
+  //     byteLength: bytes.byteLength,
+  //     bytes,
+  //   };
+  // }
   async searchNovels(
     searchTerm: string,
     pageNo: number,

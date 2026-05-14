@@ -19,13 +19,13 @@ manifest.
 
 The playground has five tabs:
 
-| Tab | Purpose |
-| --- | --- |
-| Popular | Calls `popularNovels(pageNo, options)` with pagination, latest/popular mode, and filters when present. |
-| Search | Calls `searchNovels(searchTerm, pageNo)`. |
-| Parse Novel | Calls `parseNovel(novelPath)` and displays metadata and chapters. |
-| Parse Chapter | Calls `parseChapter(chapterPath)` and previews returned content according to the chapter `contentType`. |
-| Settings | Configures playground request behavior such as user agent, cookies, and fetch mode. This is not the app's per-plugin settings UI. |
+| Tab           | Purpose                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Popular       | Calls `popularNovels(pageNo, options)` with pagination, latest/popular mode, and filters when present.                                       |
+| Search        | Calls `searchNovels(searchTerm, pageNo)`.                                                                                                    |
+| Parse Novel   | Calls `parseNovel(novelPath)` and displays metadata and chapters.                                                                            |
+| Parse Chapter | Calls `parseChapter(chapterPath)` for string fallbacks and `parseChapterResource(chapterPath)` for PDF/EPUB binary resources when available. |
+| Settings      | Configures playground request behavior such as user agent, cookies, and fetch mode. This is not the app's per-plugin settings UI.            |
 
 Use plugin `path` values in the Parse Novel and Parse Chapter inputs. A `path`
 may look like a URL, but it is plugin-owned data and should be copied from the
@@ -38,7 +38,7 @@ Before submitting a plugin, verify:
 - Popular and latest listings return expected results.
 - Search returns expected results and empty searches are handled deliberately.
 - Parse Novel returns `name`, `path`, and a chapter list.
-- Parse Chapter returns content matching the chapter `contentType`: HTML without source chrome or scripts, raw text for text chapters, or a clear PDF fallback/link for PDF chapters.
+- Parse Chapter returns content matching the chapter `contentType`: HTML without source chrome or scripts, raw text for text chapters, or a binary-backed PDF/EPUB resource with a readable fallback.
 - Filters work when implemented.
 - Cover images load or define `imageRequestInit` when needed.
 - No unauthorized copyrighted text, covers, screenshots, or fixtures are added.

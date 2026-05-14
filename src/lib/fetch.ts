@@ -2,6 +2,8 @@
 
 import { parse as parseProto } from 'protobufjs';
 
+import { log, redactLogPayload } from './log';
+
 type FetchInit = {
   headers?: Record<string, string | undefined> | Headers;
   method?: string;
@@ -50,7 +52,7 @@ const makeInit = async (init?: FetchInit) => {
  */
 export async function fetchApi(url: string, init?: FetchInit) {
   init = await makeInit(init);
-  console.log(url, init);
+  log.debug('fetch.request', redactLogPayload({ url, init }));
   return await fetch(url, init as RequestInit);
 }
 
@@ -63,7 +65,7 @@ export async function fetchApi(url: string, init?: FetchInit) {
  */
 export const fetchFile = async function (url: string, init?: FetchInit) {
   init = await makeInit(init);
-  console.log(url, init);
+  log.debug('fetch.file.request', redactLogPayload({ url, init }));
   try {
     const res = await fetch(url, init as RequestInit);
     if (!res.ok) return '';
@@ -88,7 +90,7 @@ export const fetchText = async function (
   encoding?: string,
 ): Promise<string> {
   init = await makeInit(init);
-  console.log(url, init);
+  log.debug('fetch.text.request', redactLogPayload({ url, init }));
   try {
     const res = await fetch(url, init as RequestInit);
     if (!res.ok) return '';

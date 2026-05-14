@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 
+import type { Plugin } from '@/types/plugin';
+
 export type EpubOptions = {
   title: string;
   author?: string;
@@ -12,6 +14,14 @@ export type ChapterData = {
   title: string;
   content: string;
   path: string;
+  binaryResource?: Plugin.ChapterBinaryResource;
+};
+
+type BinaryAttachment = {
+  id: string;
+  href: string;
+  chapterIndex: number;
+  resource: Plugin.ChapterBinaryResource;
 };
 
 function sanitizeHtml(html: string): string {
@@ -41,6 +51,36 @@ function generateUUID(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+function binaryExtension(resource: Plugin.ChapterBinaryResource) {
+  return resource.contentType === 'epub' ? 'epub' : 'pdf';
+}
+
+function safeResourceFilename(
+  resource: Plugin.ChapterBinaryResource,
+  index: number,
+) {
+  const extension = binaryExtension(resource);
+  const baseName = (resource.filename || `resource-${index + 1}.${extension}`)
+    .split(/[\\/]/)
+    .pop()
+    ?.replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/^\.+/, '');
+  const name = baseName || `resource.${extension}`;
+  const filename = name.toLowerCase().endsWith(`.${extension}`)
+    ? name
+    : `${name}.${extension}`;
+  return `resource-${index + 1}-${filename}`;
+}
+
+function binaryResourceHtml(attachment: BinaryAttachment) {
+  const label = attachment.resource.contentType.toUpperCase();
+  return `
+  <section>
+    <p>${label} resource attached: ${escapeXml(attachment.resource.filename || attachment.href)}</p>
+    <p><a href="${escapeXml(attachment.href)}">Open attached ${label}</a></p>
+  </section>`;
 }
 
 async function fetchCoverImage(coverUrl?: string): Promise<{
@@ -117,6 +157,28 @@ export async function createEpub(
     zip.file(`OEBPS/cover.${coverImage.extension}`, coverImage.data);
   }
 
+  const binaryAttachments: BinaryAttachment[] = chapters
+    .map((chapter, index) =>
+      chapter.binaryResource
+        ? {
+            id: `resource${index + 1}`,
+            href: `resources/${safeResourceFilename(
+              chapter.binaryResource,
+              index,
+            )}`,
+            chapterIndex: index,
+            resource: chapter.binaryResource,
+          }
+        : undefined,
+    )
+    .filter((attachment): attachment is BinaryAttachment =>
+      Boolean(attachment),
+    );
+
+  binaryAttachments.forEach(attachment => {
+    zip.file(`OEBPS/${attachment.href}`, attachment.resource.bytes);
+  });
+
   const manifestItems = [
     '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>',
     '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>',
@@ -133,6 +195,13 @@ export async function createEpub(
     ...chapters.map(
       (_, i) =>
         `<item id="chapter${i + 1}" href="chapter${i + 1}.xhtml" media-type="application/xhtml+xml"/>`,
+    ),
+  );
+
+  manifestItems.push(
+    ...binaryAttachments.map(
+      attachment =>
+        `<item id="${attachment.id}" href="${escapeXml(attachment.href)}" media-type="${attachment.resource.mediaType}"/>`,
     ),
   );
 
@@ -233,7 +302,12 @@ export async function createEpub(
   }
 
   chapters.forEach((chapter, i) => {
-    const sanitizedContent = sanitizeHtml(chapter.content);
+    const attachment = binaryAttachments.find(item => item.chapterIndex === i);
+    const sanitizedContent = sanitizeHtml(
+      [chapter.content, attachment ? binaryResourceHtml(attachment) : '']
+        .filter(Boolean)
+        .join('\n'),
+    );
     const chapterXhtml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
