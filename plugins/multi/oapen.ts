@@ -184,6 +184,13 @@ function bitstreamContentType(
     return 'pdf';
   }
   if (
+    mimeType === 'application/epub+zip' ||
+    /\.epub$/i.test(name) ||
+    /\.epub(?:$|[?#])/i.test(fileUrl)
+  ) {
+    return 'epub';
+  }
+  if (
     mimeType === 'text/plain' ||
     /\.txt$/i.test(name) ||
     /\.txt(?:$|[?#])/i.test(fileUrl)
@@ -193,10 +200,39 @@ function bitstreamContentType(
   return 'html';
 }
 
+function binaryMediaType(
+  payload: OapenFilePayload,
+): Plugin.ChapterBinaryMediaType | null {
+  const mimeType = payload.mimeType.toLowerCase();
+
+  if (
+    mimeType === 'application/pdf' ||
+    /\.pdf$/i.test(payload.label) ||
+    /\.pdf(?:$|[?#])/i.test(payload.fileUrl)
+  ) {
+    return 'application/pdf';
+  }
+  if (
+    mimeType === 'application/epub+zip' ||
+    /\.epub$/i.test(payload.label) ||
+    /\.epub(?:$|[?#])/i.test(payload.fileUrl)
+  ) {
+    return 'application/epub+zip';
+  }
+
+  return null;
+}
+
+function binaryContentType(
+  mediaType: Plugin.ChapterBinaryMediaType,
+): Extract<Plugin.ChapterContentType, 'pdf' | 'epub'> {
+  return mediaType === 'application/epub+zip' ? 'epub' : 'pdf';
+}
+
 class OapenLibrary implements Plugin.PluginBase {
   id = 'oapen';
   name = 'OAPEN Library';
-  version = '0.1.1';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -322,6 +358,38 @@ class OapenLibrary implements Plugin.PluginBase {
       `<p><a href="${escapeHtml(payload.recordUrl)}">View source record</a></p>`,
       '</article>',
     ].join('');
+  }
+
+  async parseChapterResource(
+    chapterPath: string,
+  ): Promise<Plugin.ChapterBinaryResource> {
+    if (!chapterPath.startsWith(FILE_PREFIX)) {
+      throw new Error('OAPEN chapter is not a file resource.');
+    }
+
+    const payload = decodeFilePayload(chapterPath);
+    const mediaType = binaryMediaType(payload);
+    if (!mediaType) {
+      throw new Error(`${payload.label} is not a binary PDF/EPUB resource.`);
+    }
+
+    const response = await fetchApi(
+      payload.fileUrl,
+      requestInit(`${mediaType}, */*`),
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to download ${payload.label}.`);
+    }
+    const bytes = await response.arrayBuffer();
+
+    return {
+      type: 'binary',
+      contentType: binaryContentType(mediaType),
+      mediaType,
+      filename: payload.label,
+      byteLength: bytes.byteLength,
+      bytes,
+    };
   }
 
   resolveUrl(path: string) {
