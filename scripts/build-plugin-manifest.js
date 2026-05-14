@@ -118,7 +118,16 @@ for (let language in manifestLanguages) {
       ${rawCode};
       return exports.default`,
     )(_require, {});
-    const { id, name, version, icon, customJS, customCSS, filters } = instance;
+    const {
+      id,
+      name,
+      version,
+      icon,
+      customJS,
+      customCSS,
+      filters,
+      installMode,
+    } = instance;
     const normalisedName = name.replace(/\[.*\]/, '');
 
     // --only-new logic
@@ -140,6 +149,7 @@ for (let language in manifestLanguages) {
       iconUrl: `${STATIC_LINK}/${icon || 'siteNotAvailable.png'}`,
       customJS: customJS ? `${STATIC_LINK}/${customJS}` : undefined,
       customCSS: customCSS ? `${STATIC_LINK}/${customCSS}` : undefined,
+      installMode,
     };
 
     if (pluginSet.has(id)) {

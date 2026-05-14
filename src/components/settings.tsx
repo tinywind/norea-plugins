@@ -14,15 +14,60 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import useDebounce from '@/hooks/useDebounce';
+import { storage } from '@/lib/storage';
+import { useAppStore } from '@/store';
+import type { Plugin } from '@/types/plugin';
 import { FetchMode } from '@/types/types';
 
+type PluginInputValues = Record<string, Plugin.PluginInputValue>;
+
+const isBooleanInput = (input: Plugin.PluginInputDefinition) =>
+  typeof input.value === 'boolean' ||
+  ['boolean', 'checkbox', 'switch'].includes(input.type?.toLowerCase() ?? '');
+
+const inputType = (input: Plugin.PluginInputDefinition) => {
+  switch (input.type?.toLowerCase()) {
+    case 'number':
+      return 'number';
+    case 'password':
+      return 'password';
+    case 'url':
+      return 'url';
+    default:
+      return 'text';
+  }
+};
+
+const readPluginInputValues = (
+  schema?: Plugin.PluginInputSchema,
+): PluginInputValues => {
+  const values: PluginInputValues = {};
+  for (const [key, input] of Object.entries(schema ?? {})) {
+    const storedValue = storage.get(key);
+    if (storedValue !== undefined) {
+      values[key] = isBooleanInput(input)
+        ? storedValue === true || storedValue === 'true'
+        : String(storedValue);
+    } else if (input.value !== undefined) {
+      values[key] = input.value;
+    } else {
+      values[key] = isBooleanInput(input) ? false : '';
+    }
+  }
+  return values;
+};
+
 export default function SettingsSection() {
+  const plugin = useAppStore(state => state.plugin);
   const [cookies, setCookies] = useState('');
   const debouncedCookies = useDebounce(cookies, 500);
   const [fetchMode, setFetchMode] = useState<FetchMode>(FetchMode.PROXY);
   const [useUserAgent, setUseUserAgent] = useState<CheckedState>(true);
+  const [pluginInputValues, setPluginInputValues] =
+    useState<PluginInputValues>({});
   const [loading, setLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
+  const pluginInputEntries = Object.entries(plugin?.pluginInputs ?? {});
 
   useEffect(() => {
     if (alertVisible) {
@@ -48,6 +93,22 @@ export default function SettingsSection() {
       .catch(error => console.error('Failed to save settings:', error))
       .finally(() => setLoading(false));
   }, [debouncedCookies, fetchMode, useUserAgent]);
+
+  useEffect(() => {
+    setPluginInputValues(readPluginInputValues(plugin?.pluginInputs));
+  }, [plugin?.id, plugin?.pluginInputs]);
+
+  const savePluginInput = (
+    key: string,
+    value: Plugin.PluginInputValue,
+  ) => {
+    storage.set(key, value);
+    setPluginInputValues(previous => ({
+      ...previous,
+      [key]: value,
+    }));
+    setAlertVisible(true);
+  };
 
   const getFetchModeLabel = (mode: FetchMode) => {
     switch (mode) {
@@ -85,6 +146,81 @@ export default function SettingsSection() {
         </div>
 
         <div className="space-y-6">
+          {plugin && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-px flex-1 bg-border"></div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Plugin Settings
+                </h3>
+                <div className="h-px flex-1 bg-border"></div>
+              </div>
+
+              {pluginInputEntries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {plugin.name} does not expose configurable inputs.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pluginInputEntries.map(([key, input]) => {
+                    const id = `plugin-input-${plugin.id}-${key}`;
+                    const label = input.label ?? key;
+
+                    if (isBooleanInput(input)) {
+                      return (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center gap-3 h-9">
+                            <Checkbox
+                              id={id}
+                              checked={pluginInputValues[key] === true}
+                              onCheckedChange={checked =>
+                                savePluginInput(key, checked === true)
+                              }
+                            />
+                            <Label
+                              htmlFor={id}
+                              className="font-semibold text-foreground cursor-pointer"
+                            >
+                              {label}
+                              {input.required ? ' *' : ''}
+                            </Label>
+                          </div>
+                          {input.placeholder && (
+                            <p className="text-xs text-muted-foreground">
+                              {input.placeholder}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={key} className="space-y-2">
+                        <Label
+                          htmlFor={id}
+                          className="font-semibold text-foreground"
+                        >
+                          {label}
+                          {input.required ? ' *' : ''}
+                        </Label>
+                        <Input
+                          id={id}
+                          type={inputType(input)}
+                          value={String(pluginInputValues[key] ?? '')}
+                          onChange={event =>
+                            savePluginInput(key, event.target.value)
+                          }
+                          placeholder={input.placeholder}
+                          className={input.private ? 'font-mono text-xs' : ''}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Request Configuration Section */}
           <div>
             <div className="flex items-center gap-2 mb-4">

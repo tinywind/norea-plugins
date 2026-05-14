@@ -15,7 +15,10 @@ const MAX_PATH_LENGTH = 512;
 const MAX_TREE_ENTRIES = 10000;
 const DEFAULT_MAX_BINARY_MB = 50;
 const MARKDOWN_RENDER_MAX_BYTES = 400 * 1024;
-const DEFAULT_CHAPTER_PATTERN = '\\.(md|markdown|html|htm|txt|pdf|epub)$';
+const DEFAULT_CHAPTER_FILE_PATTERN =
+  '*.md,*.markdown,*.html,*.htm,*.txt,*.pdf,*.epub';
+const DEFAULT_LEGACY_CHAPTER_PATTERN =
+  '\\.(md|markdown|html|htm|txt|pdf|epub)$';
 
 type RepoConfig = {
   owner: string;
@@ -28,6 +31,13 @@ type RepoContext = RepoConfig & {
   displayRef: string;
   treeSha: string;
   private: boolean;
+};
+
+type SourceConfig = RepoConfig & {
+  workTitle: string;
+  workRoot: string;
+  chapterFilePattern: string;
+  chapterExcludePattern: string;
 };
 
 type GitHubRepoResponse = {
@@ -101,6 +111,59 @@ function cleanText(value?: string | null) {
 
 function inputValue(key: string) {
   return cleanText(inputs.get(key));
+}
+
+function splitPatterns(value: string, fallback: string) {
+  const patterns = (value || fallback)
+    .split(/[,\n]+/)
+    .map(pattern => cleanText(pattern))
+    .filter(Boolean);
+  return patterns.length > 0 ? patterns : [fallback];
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+}
+
+function looksLikeRegExpPattern(value: string) {
+  return /(?:^|[^\\])[[\]()+{}|^$]/.test(value);
+}
+
+function globToRegExp(pattern: string, label: string) {
+  const value = cleanText(pattern);
+  if (!value) throw new Error(`${label} is not configured.`);
+  if (value.length > MAX_PATTERN_LENGTH)
+    throw new Error(`${label} is too long.`);
+  if (value.startsWith('regex:')) {
+    return compilePattern(value.slice('regex:'.length), label);
+  }
+  const forceGlob = value.startsWith('glob:');
+  const globPattern = forceGlob ? value.slice('glob:'.length) : value;
+  if (!forceGlob && looksLikeRegExpPattern(value)) {
+    return compilePattern(value, label);
+  }
+
+  let source = '';
+  for (let index = 0; index < globPattern.length; index += 1) {
+    const char = globPattern[index];
+    if (char === '*' && globPattern[index + 1] === '*') {
+      source += '.*';
+      index += 1;
+    } else if (char === '*') {
+      source += '[^/]*';
+    } else if (char === '?') {
+      source += '[^/]';
+    } else {
+      source += escapeRegExp(char);
+    }
+  }
+  return new RegExp(`^${source}$`, 'i');
+}
+
+function compileGlobMatcher(value: string, fallback: string, label: string) {
+  const patterns = splitPatterns(value, fallback);
+  const regexes = patterns.map(pattern => globToRegExp(pattern, label));
+  return (candidate: string) => regexes.some(regex => regex.test(candidate));
 }
 
 function encodePayload(prefix: string, payload: object) {
@@ -206,6 +269,27 @@ function childPath(rootPath: string, filePathValue: string) {
   return filePathValue.slice(rootPath.length + 1);
 }
 
+function normalizeInputPath(value: string, label: string) {
+  const rawPath = cleanText(value)
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+  const path = (() => {
+    try {
+      return rawPath
+        .split('/')
+        .map(segment => decodeURIComponent(segment))
+        .join('/');
+    } catch {
+      throw new Error(`${label} is not a valid URL-encoded path.`);
+    }
+  })();
+  if (path.length > MAX_PATH_LENGTH) throw new Error(`${label} is too long.`);
+  if (path.split('/').some(part => part === '..')) {
+    throw new Error(`${label} cannot contain '..'.`);
+  }
+  return path;
+}
+
 function naturalCompare(left: string, right: string) {
   return left.localeCompare(right, undefined, {
     numeric: true,
@@ -218,6 +302,7 @@ class GitHubDocs implements Plugin.PluginBase {
   name = 'GitHub Docs';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
+  installMode = 'multiSource' as const;
 
   getBaseUrl(): string {
     return SITE_URL;
@@ -244,14 +329,17 @@ class GitHubDocs implements Plugin.PluginBase {
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const payload = decodePayload<WorkPayload>(NOVEL_PREFIX, novelPath);
     this.ensureConfiguredRepo(payload);
-    const chapters = await this.pickChapters(payload, 1);
+    const currentPayload = await this.refreshWorkPayload(payload);
+    const chapters = await this.pickChapters(currentPayload, 1);
 
     return {
-      name: payload.title,
+      name: currentPayload.title,
       path: novelPath,
-      author: payload.owner,
+      author: currentPayload.owner,
       genres: 'GitHub, Documentation',
-      summary: `${payload.owner}/${payload.repo}:${payload.rootPath || '/'}`,
+      summary: `${currentPayload.owner}/${currentPayload.repo}:${
+        currentPayload.rootPath || '/'
+      }`,
       status: 'Completed',
       chapters,
     };
@@ -339,6 +427,33 @@ class GitHubDocs implements Plugin.PluginBase {
 
   private async discoverWorks(): Promise<Plugin.NovelItem[]> {
     if (!this.isConfigured()) return [];
+    const sourceConfig = this.sourceConfig();
+    if (sourceConfig) return this.discoverSourceWorks(sourceConfig);
+    return this.discoverLegacyWorks();
+  }
+
+  private async discoverSourceWorks(
+    config: SourceConfig,
+  ): Promise<Plugin.NovelItem[]> {
+    const context = await this.repoContext(config);
+    const payload: WorkPayload = {
+      owner: context.owner,
+      repo: context.repo,
+      ref: context.displayRef,
+      treeSha: context.treeSha,
+      rootPath: config.workRoot,
+      title: config.workTitle,
+      private: context.private,
+    };
+    return [
+      {
+        name: payload.title,
+        path: encodePayload(NOVEL_PREFIX, payload),
+      },
+    ];
+  }
+
+  private async discoverLegacyWorks(): Promise<Plugin.NovelItem[]> {
     const workPattern = compilePattern(
       inputValue('workPathPattern'),
       'Work path pattern',
@@ -384,8 +499,17 @@ class GitHubDocs implements Plugin.PluginBase {
     work: WorkPayload,
     startChapterNumber: number,
   ): Promise<Plugin.ChapterItem[]> {
+    const sourceConfig = this.sourceConfigForPayload(work);
+    if (sourceConfig) {
+      return this.pickConfiguredChapters(
+        work,
+        sourceConfig,
+        startChapterNumber,
+      );
+    }
+
     const pattern = compilePattern(
-      inputValue('chapterFilePattern') || DEFAULT_CHAPTER_PATTERN,
+      inputValue('chapterFilePattern') || DEFAULT_LEGACY_CHAPTER_PATTERN,
       'Chapter file pattern',
     );
     const entries = await this.treeEntries(work);
@@ -423,6 +547,60 @@ class GitHubDocs implements Plugin.PluginBase {
     });
   }
 
+  private async pickConfiguredChapters(
+    work: WorkPayload,
+    config: SourceConfig,
+    startChapterNumber: number,
+  ): Promise<Plugin.ChapterItem[]> {
+    const fileMatcher = compileGlobMatcher(
+      config.chapterFilePattern,
+      DEFAULT_CHAPTER_FILE_PATTERN,
+      'Chapter file pattern',
+    );
+    const excludeMatcher = config.chapterExcludePattern
+      ? compileGlobMatcher(config.chapterExcludePattern, '', 'Exclude pattern')
+      : undefined;
+    const entries = await this.treeEntries(work);
+    const chapterEntries = entries
+      .filter(entry => entry.type === 'blob' && entry.path && entry.sha)
+      .filter(entry => {
+        const path = entry.path || '';
+        if (!isSupportedDocument(path)) return false;
+        const relativePath = childPath(work.rootPath, path);
+        if (!relativePath || relativePath.length > MAX_PATH_LENGTH)
+          return false;
+        const name = fileName(relativePath);
+        if (!fileMatcher(name) && !fileMatcher(relativePath)) return false;
+        return !(excludeMatcher?.(name) || excludeMatcher?.(relativePath));
+      })
+      .sort((left, right) =>
+        naturalCompare(
+          childPath(work.rootPath, left.path || ''),
+          childPath(work.rootPath, right.path || ''),
+        ),
+      );
+
+    return chapterEntries.map((entry, index) => {
+      const path = entry.path || '';
+      const contentType = contentTypeFromPath(path);
+      const payload: ChapterPayload = {
+        ...work,
+        filePath: path,
+        sha: entry.sha || '',
+        size: entry.size || 0,
+        contentType,
+      };
+      return {
+        name:
+          childPath(work.rootPath, path) ||
+          titleFromPath(path, `Chapter ${index + 1}`),
+        path: encodePayload(CHAPTER_PREFIX, payload),
+        chapterNumber: startChapterNumber + index,
+        contentType,
+      };
+    });
+  }
+
   private workCandidates(entries: GitTreeEntry[]) {
     const candidates = new Set<string>(['']);
     for (const entry of entries) {
@@ -442,7 +620,72 @@ class GitHubDocs implements Plugin.PluginBase {
   }
 
   private isConfigured() {
-    return Boolean(inputValue('repositories') && inputValue('workPathPattern'));
+    return Boolean(
+      inputValue('repository') ||
+      (inputValue('repositories') && inputValue('workPathPattern')),
+    );
+  }
+
+  private sourceConfig(): SourceConfig | undefined {
+    const repository = inputValue('repository');
+    if (!repository) return undefined;
+    const match = repository.match(
+      /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)(?:@([^\r\n]+))?$/,
+    );
+    if (!match) throw new Error('Invalid GitHub repository setting.');
+
+    const ref = inputValue('ref') || cleanText(match[3]);
+    if (ref && ref.length > MAX_PATH_LENGTH) {
+      throw new Error('GitHub repository ref is too long.');
+    }
+
+    const workTitle = inputValue('workTitle');
+    if (!workTitle) throw new Error('Work title is required.');
+    const workRootInput = inputValue('workRoot');
+    if (!workRootInput) throw new Error('Work folder is required.');
+    const chapterFilePattern = inputValue('chapterFilePattern');
+    if (!chapterFilePattern) throw new Error('Chapter files is required.');
+    const workRoot = normalizeInputPath(workRootInput, 'Work folder');
+
+    return {
+      owner: match[1],
+      repo: match[2],
+      ref: ref || undefined,
+      workTitle,
+      workRoot,
+      chapterFilePattern,
+      chapterExcludePattern: inputValue('chapterExcludePattern'),
+    };
+  }
+
+  private sourceConfigForPayload(
+    payload: Pick<RepoConfig, 'owner' | 'repo'> & { rootPath?: string },
+  ) {
+    const config = this.sourceConfig();
+    if (!config) return undefined;
+    if (config.owner !== payload.owner || config.repo !== payload.repo) {
+      throw new Error('GitHub Docs path is outside the configured repository.');
+    }
+    if (payload.rootPath && payload.rootPath !== config.workRoot) {
+      throw new Error(
+        'GitHub Docs path is outside the configured work folder.',
+      );
+    }
+    return config;
+  }
+
+  private async refreshWorkPayload(payload: WorkPayload): Promise<WorkPayload> {
+    const config = this.sourceConfigForPayload(payload);
+    if (!config) return payload;
+    const context = await this.repoContext(config);
+    return {
+      ...payload,
+      ref: context.displayRef,
+      treeSha: context.treeSha,
+      rootPath: config.workRoot,
+      title: config.workTitle,
+      private: context.private,
+    };
   }
 
   private repoConfigs() {
@@ -470,6 +713,19 @@ class GitHubDocs implements Plugin.PluginBase {
   }
 
   private ensureConfiguredRepo(payload: Pick<RepoConfig, 'owner' | 'repo'>) {
+    const sourceConfig = this.sourceConfig();
+    if (sourceConfig) {
+      if (
+        sourceConfig.owner !== payload.owner ||
+        sourceConfig.repo !== payload.repo
+      ) {
+        throw new Error(
+          'GitHub Docs path is outside the configured repository.',
+        );
+      }
+      return;
+    }
+
     const allowed = this.repoConfigs().some(
       config => config.owner === payload.owner && config.repo === payload.repo,
     );
@@ -656,12 +912,43 @@ class GitHubDocs implements Plugin.PluginBase {
   }
 
   pluginInputs = {
-    repositories: {
+    repository: {
       value: '',
-      label: 'Repositories',
+      label: 'Repository',
       type: 'Text',
-      placeholder: 'owner/repo,owner2/repo2@main',
+      placeholder: 'owner/repo',
       required: true,
+    },
+    ref: {
+      value: '',
+      label: 'Ref',
+      type: 'Text',
+      placeholder: 'main',
+    },
+    workTitle: {
+      value: '',
+      label: 'Work title',
+      type: 'Text',
+      placeholder: 'My novel',
+      required: true,
+    },
+    workRoot: {
+      label: 'Work folder',
+      type: 'Text',
+      placeholder: 'works/my-novel/manuscripts',
+      required: true,
+    },
+    chapterFilePattern: {
+      label: 'Chapter files',
+      type: 'Text',
+      placeholder: 'regex:^arc-[0-9]{3}/ch-[0-9]+\\.md$',
+      required: true,
+    },
+    chapterExcludePattern: {
+      value: '',
+      label: 'Exclude files',
+      type: 'Text',
+      placeholder: 'README.md,draft-*,regex:^legacy/',
     },
     token: {
       value: '',
@@ -669,24 +956,10 @@ class GitHubDocs implements Plugin.PluginBase {
       type: 'Password',
       private: true,
     },
-    workPathPattern: {
-      value: '',
-      label: 'Work path regexp',
-      type: 'Text',
-      placeholder: 'owner/repo:docs/(?<title>[^/]+)$',
-      required: true,
-    },
-    chapterFilePattern: {
-      value: DEFAULT_CHAPTER_PATTERN,
-      label: 'Chapter file regexp',
-      type: 'Text',
-      placeholder: '\\.(md|html|pdf|epub)$',
-      required: true,
-    },
     maxBinaryMb: {
-      value: DEFAULT_MAX_BINARY_MB.toString(),
       label: 'Max binary MB',
       type: 'Number',
+      placeholder: DEFAULT_MAX_BINARY_MB.toString(),
     },
   } satisfies Plugin.PluginInputSchema;
 

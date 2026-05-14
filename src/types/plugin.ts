@@ -65,11 +65,13 @@ export namespace Plugin {
     showLatestNovels?: boolean;
     filters: Q extends undefined ? undefined : FilterToValues<Q>;
   };
+  export type InstallMode = 'single' | 'multiSource';
   export type PluginItem = {
     id: string;
     name: string;
     version: string;
     icon: string;
+    installMode?: InstallMode;
   };
   export type ImageRequestInit = {
     method?: string;
@@ -77,6 +79,10 @@ export namespace Plugin {
     body?: string;
   };
   export type PluginInputValue = string | boolean;
+  export type PluginInputOption = {
+    label: string;
+    value: string;
+  };
   export type PluginInputDefinition = {
     value?: PluginInputValue;
     label?: string;
@@ -84,6 +90,7 @@ export namespace Plugin {
     placeholder?: string;
     required?: boolean;
     private?: boolean;
+    options?: PluginInputOption[];
   };
   export type PluginInputSchema = Record<string, PluginInputDefinition>;
 
@@ -101,6 +108,7 @@ export namespace Plugin {
     customCSS?: string;
     imageRequestInit?: ImageRequestInit;
     filters?: Filters;
+    installMode?: InstallMode;
     pluginInputs?: PluginInputSchema;
     pluginSettings?: PluginInputSchema | Record<string, unknown>;
     version: string;
