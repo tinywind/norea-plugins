@@ -49,6 +49,19 @@ class ExamplePlugin implements Plugin.PluginBase {
     return { name: 'Untitled', path: novelPath, chapters: [] };
   }
 
+  async parseNovelSince(
+    novelPath: string,
+    sinceChapterNumber: number,
+  ): Promise<Plugin.SourceNovel> {
+    const novel = await this.parseNovel(novelPath);
+    return {
+      ...novel,
+      chapters: novel.chapters.filter(
+        chapter => chapter.chapterNumber >= sinceChapterNumber,
+      ),
+    };
+  }
+
   async parseChapter(chapterPath: string): Promise<string> {
     return '';
   }
@@ -77,6 +90,7 @@ export default new ExamplePlugin();
 | `pluginSettings` | no | Compatibility alias for hosts that support upstream-style plugin settings. |
 | `popularNovels(pageNo, options)` | yes | Returns a page of source items. |
 | `parseNovel(novelPath)` | yes | Returns metadata and chapter list for one source item. |
+| `parseNovelSince(novelPath, sinceChapterNumber)` | yes | Returns the same metadata fields as `parseNovel`, with chapters starting at `sinceChapterNumber` when the plugin can optimize. Returning the full list is allowed. |
 | `parseChapter(chapterPath)` | yes | Returns content for one chapter. The chapter row's `contentType` tells the host whether the string is HTML, plain text, or a PDF resource. |
 | `searchNovels(searchTerm, pageNo)` | yes | Returns a page of search results. |
 | `resolveUrl(path, isNovel?)` | no | Converts opaque plugin paths into browser URLs. |
@@ -174,7 +188,8 @@ async popularNovels(
 ### `parseNovel`
 
 `parseNovel` receives the `NovelItem.path` returned by `popularNovels` or
-`searchNovels`. It must return the same `path` value on the `SourceNovel`.
+`searchNovels`. It must return the same `path` value on the `SourceNovel` and
+the full chapter list in reading order by `chapterNumber`.
 
 ```ts
 async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
@@ -197,6 +212,15 @@ async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
   };
 }
 ```
+
+### `parseNovelSince`
+
+`parseNovelSince` receives the same `novelPath` plus an inclusive
+`sinceChapterNumber` anchor. Return the same metadata fields as `parseNovel`.
+The `chapters` array should contain only chapters whose `chapterNumber` is
+greater than or equal to the anchor when the source can support that cheaply.
+Returning the full chapter list is valid. The returned list must still be sorted
+by `chapterNumber` in ascending reading order.
 
 ### `parseChapter`
 
@@ -265,7 +289,7 @@ or an encoded payload as long as the same plugin can handle it later.
 | `artist` | `string` | no | Artist names. |
 | `status` | `string` | no | Reading/publication status. Prefer values from `NovelStatus` when possible. |
 | `rating` | `number` | no | Rating out of 5. |
-| `chapters` | `ChapterItem[]` | no | Chapter list. Use an empty array when known empty. |
+| `chapters` | `ChapterItem[]` | yes | Chapter list. Use an empty array when known empty. |
 
 ## ChapterItem
 
@@ -277,7 +301,7 @@ or an encoded payload as long as the same plugin can handle it later.
 | `path` | `string` | yes | Opaque plugin-owned chapter identifier. |
 | `contentType` | `'html'`, `'text'`, or `'pdf'` | no | Per-chapter content type. Defaults to `'html'` for legacy plugins. |
 | `releaseTime` | `string` or `null` | no | ISO date, `YYYY-MM-DD`, or source-provided date string. |
-| `chapterNumber` | `number` | no | Numeric chapter value when the source exposes one. |
+| `chapterNumber` | `number` | yes | Stable numeric ordering key within the novel. Use the source number when available; otherwise calculate a deterministic one-based reading-order number. Values must be finite and unique. |
 | `page` | `string` | no | Pagination cursor for page-based plugins. |
 
 ## Filters
@@ -377,9 +401,10 @@ import { load as parseHTML } from 'cheerio';
 const $ = parseHTML(html);
 const title = $('h1').first().text().trim();
 const chapters = $('a.chapter')
-  .map((_, link) => ({
+  .map((index, link) => ({
     name: $(link).text().trim(),
     path: $(link).attr('href') || '',
+    chapterNumber: index + 1,
   }))
   .get()
   .filter(chapter => chapter.name && chapter.path);
@@ -421,6 +446,40 @@ await fetchApi('https://library.oapen.org/rest/search?query=dc.type:book', {
   contextUrl: 'https://library.oapen.org/rest/search?query=dc.type:book&limit=1',
 });
 ```
+
+Use `@libs/webView` only when a source needs a rendered scraper WebView page
+instead of a browser `fetch()` call. These helpers use the app's task-owned
+scraper WebView session.
+
+```ts
+import {
+  webViewFetch,
+  webViewLoad,
+  webViewNavigate,
+} from '@libs/webView';
+
+const loaded = await webViewLoad('https://example.com/book/1');
+const html = loaded.html;
+
+const position = await webViewNavigate('https://example.com/account');
+
+const raw = await webViewFetch('https://example.com/chapter/1', {
+  beforeContentScript: `
+    window.addEventListener('DOMContentLoaded', function () {
+      window.ReactNativeWebView.postMessage(document.body.innerHTML);
+    });
+  `,
+});
+```
+
+`webViewFetch()` is a low-level extractor: plugin code must call
+`window.ReactNativeWebView.postMessage(payload)`. `webViewLoad()` waits for the
+document to be ready and returns `{ html, text, url, title }`.
+`webViewNavigate()` returns `{ url, title? }` after navigating the task-owned
+scraper WebView. For `webViewLoad()` and `webViewNavigate()`, do not call
+`ReactNativeWebView.postMessage` from `beforeContentScript`; the host owns the
+result message. These helpers do not replace manual challenge clearing; open the
+site browser in the app first when a site requires user interaction.
 
 Avoid bare `fetch` unless you have verified it is supported by the host contract.
 Do not log credentials, cookies, tokens, or full request bodies.

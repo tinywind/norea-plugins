@@ -6,6 +6,7 @@ import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 // import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 // import { storage, localStorage, sessionStorage } from '@libs/storage';
+// import { webViewFetch, webViewLoad, webViewNavigate } from '@libs/webView';
 // import { encode, decode } from 'urlencode';
 // import dayjs from 'dayjs';
 // import { Parser } from 'htmlparser2';
@@ -45,6 +46,7 @@ class TemplatePlugin implements Plugin.PluginBase {
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: 'Untitled',
+      chapters: [],
     };
 
     // TODO: get here data from the site and
@@ -68,12 +70,24 @@ class TemplatePlugin implements Plugin.PluginBase {
       path: '',
       contentType: 'html',
       releaseTime: '',
-      chapterNumber: 0,
+      chapterNumber: 1,
     };
     chapters.push(chapter);
 
     novel.chapters = chapters;
     return novel;
+  }
+  async parseNovelSince(
+    novelPath: string,
+    sinceChapterNumber: number,
+  ): Promise<Plugin.SourceNovel> {
+    const novel = await this.parseNovel(novelPath);
+    return {
+      ...novel,
+      chapters: novel.chapters.filter(
+        chapter => chapter.chapterNumber >= sinceChapterNumber,
+      ),
+    };
   }
   async parseChapter(chapterPath: string): Promise<string> {
     // Parse chapter content here. Return raw text only when chapter.contentType is "text".

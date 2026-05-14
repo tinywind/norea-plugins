@@ -224,6 +224,7 @@ class AozoraBunko implements Plugin.PluginBase {
       chapters.push({
         name: 'Full text',
         contentType: 'html',
+        chapterNumber: 1,
         path: chapterPath(
           HTML_PREFIX,
           toAbsoluteUrl(book.htmlUrl),
@@ -234,6 +235,7 @@ class AozoraBunko implements Plugin.PluginBase {
       chapters.push({
         name: 'Full text',
         contentType: 'text',
+        chapterNumber: 1,
         path: chapterPath(
           TEXT_PREFIX,
           toAbsoluteUrl(book.textUrl),
@@ -251,6 +253,10 @@ class AozoraBunko implements Plugin.PluginBase {
       status: 'Completed',
       chapters,
     };
+  }
+
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
   }
 
   async parseChapter(chapterPathValue: string) {

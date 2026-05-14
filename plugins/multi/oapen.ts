@@ -84,26 +84,38 @@ function decodeFilePayload(path: string): OapenFilePayload {
   }
 }
 
-function normalizeResults(data: any): OapenItem[] {
-  if (Array.isArray(data)) return data;
-  if (!data || typeof data !== 'object') return [];
+function objectRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function normalizeResults(data: unknown): OapenItem[] {
+  if (Array.isArray(data)) return data as OapenItem[];
+
+  const root = objectRecord(data);
+  if (!root) return [];
 
   for (const key of ['items', 'results', 'resources', 'resource']) {
-    if (Array.isArray(data[key])) return data[key];
+    if (Array.isArray(root[key])) return root[key] as OapenItem[];
   }
 
+  const embedded = objectRecord(root._embedded);
+  const searchResult = objectRecord(embedded?.searchResult);
+  const searchEmbedded = objectRecord(searchResult?._embedded);
   const embeddedObjects =
-    data._embedded?.searchResult?._embedded?.objects ??
-    data._embedded?.objects ??
-    data.objects;
+    searchEmbedded?.objects ?? embedded?.objects ?? root.objects;
 
   if (Array.isArray(embeddedObjects)) {
     return embeddedObjects
-      .map((entry: any) => entry._embedded?.indexableObject ?? entry)
+      .map(entry => {
+        const entryEmbedded = objectRecord(objectRecord(entry)?._embedded);
+        return (entryEmbedded?.indexableObject ?? entry) as OapenItem;
+      })
       .filter(Boolean);
   }
 
-  if (data.uuid || data.handle || data.metadata) return [data];
+  if (root.uuid || root.handle || root.metadata) return [root as OapenItem];
   return [];
 }
 
@@ -244,6 +256,7 @@ class OapenLibrary implements Plugin.PluginBase {
       ? bitstreams.map(({ bitstream, index, url }) => ({
           name: bitstreamLabel(bitstream, index),
           contentType: bitstreamContentType(bitstream, url),
+          chapterNumber: index + 1,
           path: encodeFilePayload({
             recordUrl,
             fileUrl: url,
@@ -255,6 +268,7 @@ class OapenLibrary implements Plugin.PluginBase {
           {
             name: 'Source record',
             contentType: 'html',
+            chapterNumber: 1,
             path: encodeFilePayload({
               recordUrl,
               fileUrl: recordUrl,
@@ -282,6 +296,10 @@ class OapenLibrary implements Plugin.PluginBase {
       status: 'Completed',
       chapters,
     };
+  }
+
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
   }
 
   async parseChapter(chapterPath: string) {

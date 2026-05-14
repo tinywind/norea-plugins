@@ -82,6 +82,10 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
     };
   }
 
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
+  }
+
   async parseChapter(chapterPath: string): Promise<string> {
     const rootUrl = this.fixtureRootUrl();
 

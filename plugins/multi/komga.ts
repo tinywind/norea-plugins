@@ -17,6 +17,43 @@ type RequestOptions = {
 
 type SeriesSearchCondition = Record<string, unknown>;
 
+type KomgaAuthor = {
+  role?: string;
+  name?: string;
+};
+
+type KomgaSeries = {
+  id: string;
+  name: string;
+  metadata: {
+    genres?: string[];
+    status?: string;
+  };
+  booksMetadata: {
+    authors?: KomgaAuthor[];
+    summary?: string;
+  };
+};
+
+type KomgaBook = {
+  id: string;
+  metadata: {
+    title?: string;
+  };
+};
+
+type KomgaManifest = {
+  toc?: KomgaTocItem[];
+  readingOrder?: { href?: string }[];
+};
+
+type KomgaTocItem = {
+  children?: KomgaTocItem[];
+  href?: string;
+  title?: string;
+  [key: string]: unknown;
+};
+
 function cleanText(value?: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -174,8 +211,8 @@ class KomgaPlugin implements Plugin.PluginBase {
     return output;
   }
 
-  flattenArray(arr: any[] = []) {
-    return arr.reduce((acc: any, obj: any) => {
+  flattenArray(arr: KomgaTocItem[] = []): KomgaTocItem[] {
+    return arr.reduce<KomgaTocItem[]>((acc, obj) => {
       const { children, ...rest } = obj;
       acc.push(rest);
 
@@ -253,18 +290,15 @@ class KomgaPlugin implements Plugin.PluginBase {
 
     const response = await this.makeRequest(novelPath);
 
-    const series = JSON.parse(response);
+    const series = JSON.parse(response) as KomgaSeries;
 
     novel.name = series.name;
-    novel.author = series.booksMetadata.authors
-      .filter((author: any) => author.role === 'writer')
-      .reduce(
-        (accumulated: string, current: any) =>
-          accumulated + (accumulated !== '' ? ', ' : '') + current.name,
-        '',
-      );
+    novel.author = (series.booksMetadata.authors ?? [])
+      .filter(author => author.role === 'writer' && author.name)
+      .map(author => author.name)
+      .join(', ');
     novel.cover = absoluteUrl(baseUrl, `api/v1/series/${series.id}/thumbnail`);
-    novel.genres = series.metadata.genres.join(', ');
+    novel.genres = (series.metadata.genres ?? []).join(', ');
 
     switch (series.metadata.status) {
       case 'ENDED':
@@ -291,26 +325,28 @@ class KomgaPlugin implements Plugin.PluginBase {
       `api/v1/series/${series.id}/books?unpaged=true`,
     );
 
-    const booksData = JSON.parse(booksResponse).content;
+    const booksData = JSON.parse(booksResponse).content as KomgaBook[];
 
     for (const book of booksData) {
       const bookManifestResponse = await this.makeRequest(
         `opds/v2/books/${book.id}/manifest`,
       );
 
-      const bookManifest = JSON.parse(bookManifestResponse);
+      const bookManifest = JSON.parse(bookManifestResponse) as KomgaManifest;
 
-      const toc = this.flattenArray(bookManifest.toc);
+      const toc = this.flattenArray(bookManifest.toc ?? []);
+      const readingOrder = bookManifest.readingOrder ?? [];
 
       let i = 1;
-      for (const page of bookManifest.readingOrder) {
-        const tocItem = toc.find(
-          (v: any) => v.href?.split('#')[0] === page.href,
-        );
+      for (const page of readingOrder) {
+        if (!page.href) continue;
+
+        const tocItem = toc.find(v => v.href?.split('#')[0] === page.href);
         const title = tocItem ? tocItem.title : null;
         chapters.push({
-          name: `${i}/${bookManifest.readingOrder.length} - ${book.metadata.title}${title ? ' - ' + title : ''}`,
-          path: 'opds/v2' + page.href?.split('opds/v2').pop(),
+          name: `${i}/${readingOrder.length} - ${book.metadata.title}${title ? ' - ' + title : ''}`,
+          path: 'opds/v2' + page.href.split('opds/v2').pop(),
+          chapterNumber: chapters.length + 1,
           contentType: 'html',
         });
         i++;
@@ -320,6 +356,10 @@ class KomgaPlugin implements Plugin.PluginBase {
     novel.chapters = chapters;
     return novel;
   }
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
+  }
+
   async parseChapter(chapterPath: string): Promise<string> {
     const baseUrl = this.serverUrl();
     const response = await this.makeResponse(chapterPath, {

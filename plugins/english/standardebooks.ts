@@ -71,7 +71,12 @@ class StandardEbooks implements Plugin.PluginBase {
         new URL(href || '', `${requestUrl(novelPath)}/`).href,
       );
       if (!href || !name || this.isNonReadingSection(path)) return;
-      chapters.push({ name, path, contentType: 'html' });
+      chapters.push({
+        name,
+        path,
+        chapterNumber: chapters.length + 1,
+        contentType: 'html',
+      });
     });
 
     return {
@@ -98,6 +103,10 @@ class StandardEbooks implements Plugin.PluginBase {
       status: 'Completed',
       chapters,
     };
+  }
+
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
   }
 
   async parseChapter(chapterPath: string): Promise<string> {

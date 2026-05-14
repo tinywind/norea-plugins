@@ -18,7 +18,7 @@ export namespace Plugin {
      * or just a string
      */
     releaseTime?: string | null;
-    chapterNumber?: number;
+    chapterNumber: number;
     /**
      * For novel without pages only
      */
@@ -38,7 +38,7 @@ export namespace Plugin {
     status?: string;
     /** Rating out of 5 as float */
     rating?: number;
-    chapters?: ChapterItem[];
+    chapters: ChapterItem[];
   } & NovelItem;
 
   export type SourcePage = {
@@ -103,6 +103,10 @@ export namespace Plugin {
      * @returns novel metadata and its first page
      */
     parseNovel(novelPath: string): Promise<SourceNovel>;
+    parseNovelSince(
+      novelPath: string,
+      sinceChapterNumber: number,
+    ): Promise<SourceNovel>;
     /** Return content matching the chapter row's contentType. */
     parseChapter(chapterPath: string): Promise<string>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
@@ -113,6 +117,10 @@ export namespace Plugin {
     parseNovel(
       novelPath: string,
     ): Promise<SourceNovel & { totalPages: number }>;
+    parseNovelSince(
+      novelPath: string,
+      sinceChapterNumber: number,
+    ): Promise<SourceNovel & { totalPages?: number }>;
     parsePage(novelPath: string, page: string): Promise<SourcePage>;
   } & PluginBase;
 }

@@ -10,7 +10,7 @@
 - TypeScript or JavaScript basics
 - Node >=18
 - Dependencies installed with `npm i`
-- The canonical [Norea plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md) for supported runtime APIs and sandbox rules
+- The canonical [Norea plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md) for supported runtime APIs, sandbox rules, and source plugin data contracts
 
 ### Guide
 
@@ -47,3 +47,13 @@ public/static/src/multi/example/icon.png
 
 Multi-source plugins still follow the same `Plugin.PluginBase` contract and
 must return `path` fields, not `url` fields.
+
+Every source plugin must implement both `parseNovel()` and
+`parseNovelSince(novelPath, sinceChapterNumber)`. Every chapter returned from
+`parseNovel()`, `parseNovelSince()`, or `parsePage()` must include a finite,
+unique `chapterNumber`. Use the source-provided chapter number when one exists;
+otherwise calculate a one-based reading-order number in the plugin.
+
+When a source needs a rendered scraper WebView page rather than a browser fetch,
+use `@libs/webView` helpers. The canonical contract defines
+`webViewFetch()`, `webViewLoad()`, and `webViewNavigate()`.

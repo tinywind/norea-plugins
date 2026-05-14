@@ -465,11 +465,9 @@ export default function ParseNovelSection({
                         <th className="text-left py-3 px-4 font-semibold text-foreground w-32">
                           Release Time
                         </th>
-                        {chapters.some(ch => ch.chapterNumber) && (
-                          <th className="text-left py-3 px-4 font-semibold text-foreground w-24">
-                            Chapter #
-                          </th>
-                        )}
+                        <th className="text-left py-3 px-4 font-semibold text-foreground w-24">
+                          Chapter #
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -530,11 +528,9 @@ export default function ParseNovelSection({
                           <td className="py-2.5 px-4 text-muted-foreground text-xs">
                             {formatDate(chapter.releaseTime)}
                           </td>
-                          {chapters.some(ch => ch.chapterNumber) && (
-                            <td className="py-2.5 px-4 text-muted-foreground text-xs">
-                              {chapter.chapterNumber || '-'}
-                            </td>
-                          )}
+                          <td className="py-2.5 px-4 text-muted-foreground text-xs">
+                            {chapter.chapterNumber}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

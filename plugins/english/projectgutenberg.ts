@@ -135,11 +135,16 @@ class ProjectGutenberg implements Plugin.PluginBase {
             {
               name: 'Full ebook',
               path: htmlChapterPath(bookId),
+              chapterNumber: 1,
               contentType: 'html',
             },
           ]
         : [],
     };
+  }
+
+  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
+    return this.parseNovel(novelPath);
   }
 
   async parseChapter(chapterPath: string) {

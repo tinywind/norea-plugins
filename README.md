@@ -6,7 +6,9 @@ This repository starts from the upstream plugin repository shape, but it intenti
 
 ## Runtime Contract
 
-The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; do not duplicate runtime contract details here.
+The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; mirror only the author-facing requirements needed to keep samples compatible.
+
+Current source plugins must provide `parseNovel()`, `parseNovelSince(novelPath, sinceChapterNumber)`, and `chapterNumber` on every returned chapter. `parseNovel()` returns full metadata and the full chapter list. `parseNovelSince()` returns the same metadata fields but may return only chapters whose `chapterNumber` is greater than or equal to `sinceChapterNumber`; plugins that cannot optimize may return the full chapter list. Chapter numbers are plugin-owned stable ordering keys, must be numeric, must be unique within a novel, and must be sorted in reading order.
 
 ## Included Samples
 
