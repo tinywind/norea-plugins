@@ -22,12 +22,14 @@ export default function PluginHeader({ selectedPlugin }: PluginHeaderProps) {
     <header className="border-b border-border">
       <div className="px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-[var(--color-accent-soft)] text-xl font-semibold text-[var(--color-accent-strong)] transition-colors">
-            読
-          </span>
+          <img
+            src="/icon.svg"
+            alt="Norea"
+            className="h-9 w-9 shrink-0 rounded-sm"
+          />
           <div>
             <h1 className="text-sm font-semibold text-foreground">
-              Plugin Playground
+              Norea Plugin Playground
             </h1>
             <p className="text-xs text-muted-foreground">
               {selectedPlugin?.name}
