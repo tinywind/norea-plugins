@@ -244,11 +244,12 @@ async parseChapter(chapterPath: string): Promise<string> {
 
 ### `parseChapterResource`
 
-`parseChapterResource` is optional and only needed for plugins that can return
-PDF or EPUB bytes directly. Return an `ArrayBuffer` or `Uint8Array`; do not
-return base64, token-bearing URLs, request headers, or request init objects in
-plugin output. `parseChapter()` remains required and should return a readable
-HTML fallback for the same chapter path.
+`parseChapterResource` is optional for text and HTML-only plugins. A plugin that
+returns `ChapterItem.contentType: 'pdf'` or `'epub'` for any chapter must
+implement it and return an `ArrayBuffer` or `Uint8Array`; do not return base64,
+token-bearing URLs, request headers, or request init objects in plugin output.
+`parseChapter()` remains required and should return a readable HTML fallback for
+the same chapter path.
 
 ```ts
 type ChapterBinaryResource = {
@@ -353,8 +354,10 @@ or an encoded payload as long as the same plugin can handle it later.
 
 For PDF and EPUB chapters, set `contentType` to `'pdf'` or `'epub'`, keep
 `path` as an opaque plugin-owned identifier, and implement `parseChapter()` as a
-safe readable fallback. Implement `parseChapterResource()` only when the plugin
-can return the actual binary bytes as `ArrayBuffer` or `Uint8Array`.
+safe readable fallback. Also implement `parseChapterResource()` so the host can
+receive the actual binary bytes as `ArrayBuffer` or `Uint8Array`. If the plugin
+cannot return those bytes, do not mark the chapter as `'pdf'` or `'epub'`; use
+an HTML fallback chapter instead.
 
 ## Filters
 
