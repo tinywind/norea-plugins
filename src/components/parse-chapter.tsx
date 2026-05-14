@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, FileText, Code, Download } from 'lucide-react';
+import {
+  CheckCircle2,
+  Code,
+  Copy,
+  Download,
+  FileText,
+  Loader2,
+  XCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +23,10 @@ import {
 } from '@/components/ui/tooltip';
 import { useAppStore } from '@/store';
 import { usePluginCustomAssets } from '@/hooks/usePluginCustomAssets';
+import {
+  createEpubPreview,
+  type EpubPreviewResult,
+} from '@/lib/epub-preview';
 import type { Plugin } from '@/types/plugin';
 
 function escapeHtml(value: string) {
@@ -39,6 +52,14 @@ type LoadedBinaryResource = Plugin.ChapterBinaryResource & {
   objectUrl: string;
 };
 
+type PreviewStatus = 'idle' | 'loading' | 'loaded' | 'failed';
+
+type ResourceCheck = {
+  label: string;
+  detail: string;
+  passed: boolean;
+};
+
 function bytesToBlob(resource: Plugin.ChapterBinaryResource) {
   return new Blob([resource.bytes], { type: resource.mediaType });
 }
@@ -50,6 +71,116 @@ function downloadResource(resource: LoadedBinaryResource) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) return `${value} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let size = value / 1024;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return `${size.toFixed(size >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+}
+
+function resourceByteLength(resource: Plugin.ChapterBinaryResource) {
+  return resource.bytes.byteLength;
+}
+
+function expectedMediaType(contentType: Plugin.ChapterContentType) {
+  return contentType === 'epub' ? 'application/epub+zip' : 'application/pdf';
+}
+
+function binaryResourceChecks(
+  resource: LoadedBinaryResource,
+  previewStatus: PreviewStatus,
+  epubPreview?: EpubPreviewResult,
+  epubPreviewError?: string,
+): ResourceCheck[] {
+  const byteLength = resourceByteLength(resource);
+  const checks: ResourceCheck[] = [
+    {
+      label: 'Downloaded bytes',
+      detail: `${formatBytes(byteLength)} fetched from plugin`,
+      passed: byteLength > 0,
+    },
+    {
+      label: 'Declared size',
+      detail: `${formatBytes(resource.byteLength)} reported by resource`,
+      passed: resource.byteLength === byteLength,
+    },
+    {
+      label: 'Media type',
+      detail: resource.mediaType,
+      passed: resource.mediaType === expectedMediaType(resource.contentType),
+    },
+    {
+      label: 'Download URL',
+      detail: resource.filename || resource.objectUrl,
+      passed: resource.objectUrl.startsWith('blob:'),
+    },
+  ];
+
+  if (resource.contentType === 'pdf') {
+    checks.push({
+      label: 'PDF render',
+      detail:
+        previewStatus === 'loaded'
+          ? 'Preview iframe loaded'
+          : previewStatus === 'failed'
+            ? 'Preview iframe failed'
+            : 'Preview iframe pending',
+      passed: previewStatus === 'loaded',
+    });
+  } else {
+    checks.push({
+      label: 'EPUB package',
+      detail:
+        epubPreview?.packagePath ||
+        epubPreviewError ||
+        'Waiting for package parse',
+      passed: Boolean(epubPreview),
+    });
+    checks.push({
+      label: 'EPUB render',
+      detail:
+        previewStatus === 'loaded'
+          ? epubPreview?.chapterPath || 'Preview iframe loaded'
+          : previewStatus === 'failed'
+            ? epubPreviewError || 'Preview iframe failed'
+            : 'Preview iframe pending',
+      passed: previewStatus === 'loaded',
+    });
+  }
+
+  return checks;
+}
+
+function CheckBadge({ check }: { check: ResourceCheck }) {
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-3">
+      <Badge
+        variant="outline"
+        className={
+          check.passed
+            ? 'border-green-500/30 text-green-700 dark:text-green-400'
+            : 'border-red-500/30 text-red-700 dark:text-red-400'
+        }
+      >
+        {check.passed ? (
+          <CheckCircle2 className="w-3 h-3" />
+        ) : (
+          <XCircle className="w-3 h-3" />
+        )}
+        {check.label}
+      </Badge>
+      <p className="mt-2 text-xs text-muted-foreground break-words">
+        {check.detail}
+      </p>
+    </div>
+  );
 }
 
 export default function ParseChapterSection() {
@@ -67,6 +198,9 @@ export default function ParseChapterSection() {
   const [chapterPath, setChapterPath] = useState('');
   const [chapterText, setChapterText] = useState('');
   const [binaryResource, setBinaryResource] = useState<LoadedBinaryResource>();
+  const [epubPreview, setEpubPreview] = useState<EpubPreviewResult>();
+  const [epubPreviewError, setEpubPreviewError] = useState('');
+  const [previewStatus, setPreviewStatus] = useState<PreviewStatus>('idle');
   const [chapterContentType, setChapterContentType] =
     useState<Plugin.ChapterContentType>('html');
   const [loading, setLoading] = useState(false);
@@ -87,6 +221,9 @@ export default function ParseChapterSection() {
       setFetchError('');
       setChapterText('');
       setBinaryResource(undefined);
+      setEpubPreview(undefined);
+      setEpubPreviewError('');
+      setPreviewStatus('idle');
       try {
         if (
           (contentType === 'pdf' || contentType === 'epub') &&
@@ -94,7 +231,28 @@ export default function ParseChapterSection() {
         ) {
           const result = await plugin.parseChapterResource(path);
           const objectUrl = URL.createObjectURL(bytesToBlob(result));
+          let nextEpubPreview: EpubPreviewResult | undefined;
+          let nextEpubPreviewError = '';
+
+          if (result.contentType === 'epub') {
+            try {
+              nextEpubPreview = await createEpubPreview(result);
+            } catch (error) {
+              nextEpubPreviewError =
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to render EPUB preview';
+            }
+          }
+
           setBinaryResource({ ...result, objectUrl });
+          setEpubPreview(nextEpubPreview);
+          setEpubPreviewError(nextEpubPreviewError);
+          setPreviewStatus(
+            result.contentType === 'pdf' || nextEpubPreview
+              ? 'loading'
+              : 'failed',
+          );
           setChapterText(result.fallbackHtml || '');
           setChapterContentType(result.contentType);
         } else {
@@ -106,6 +264,7 @@ export default function ParseChapterSection() {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch chapter';
         setFetchError(errorMessage);
+        setPreviewStatus('failed');
         console.error('Error parsing chapter:', error);
       } finally {
         setLoading(false);
@@ -129,6 +288,15 @@ export default function ParseChapterSection() {
       toast.success(`${label || 'Text'} copied to clipboard!`);
     }
   };
+
+  const checks = binaryResource
+    ? binaryResourceChecks(
+        binaryResource,
+        previewStatus,
+        epubPreview,
+        epubPreviewError,
+      )
+    : [];
 
   // Handle pre-filled path from navigation
   useEffect(() => {
@@ -315,6 +483,7 @@ export default function ParseChapterSection() {
                     variant="outline"
                     size="sm"
                     className="gap-2 bg-transparent"
+                    data-testid="binary-download-button"
                     onClick={() => downloadResource(binaryResource)}
                   >
                     <Download className="w-4 h-4" />
@@ -354,22 +523,78 @@ export default function ParseChapterSection() {
               <div className="bg-background rounded-b-lg p-6 max-h-[600px] overflow-y-auto">
                 {binaryResource ? (
                   <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <div
+                      className="text-sm text-muted-foreground space-y-1"
+                      data-testid="binary-resource-status"
+                    >
                       <p>Media type: {binaryResource.mediaType}</p>
+                      <p>
+                        Size: {formatBytes(resourceByteLength(binaryResource))}
+                      </p>
                       {binaryResource.filename && (
                         <p>Filename: {binaryResource.filename}</p>
                       )}
                     </div>
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                      data-testid="binary-resource-checks"
+                    >
+                      {checks.map(check => (
+                        <CheckBadge key={check.label} check={check} />
+                      ))}
+                    </div>
+                    <div
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                      data-testid="binary-render-status"
+                    >
+                      {previewStatus === 'loading' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : previewStatus === 'loaded' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      ) : previewStatus === 'failed' ? (
+                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      ) : (
+                        <FileText className="w-4 h-4" />
+                      )}
+                      <span>
+                        Render status:{' '}
+                        {previewStatus === 'loaded'
+                          ? 'loaded'
+                          : previewStatus === 'failed'
+                            ? 'failed'
+                            : previewStatus === 'loading'
+                              ? 'loading'
+                              : 'idle'}
+                      </span>
+                    </div>
                     {binaryResource.contentType === 'pdf' ? (
                       <iframe
+                        key={binaryResource.objectUrl}
+                        data-testid="pdf-preview-frame"
                         title={binaryResource.filename || 'PDF chapter'}
                         src={binaryResource.objectUrl}
                         className="w-full h-[520px] rounded border border-border"
+                        onLoad={() => setPreviewStatus('loaded')}
+                        onError={() => setPreviewStatus('failed')}
+                      />
+                    ) : epubPreview ? (
+                      <iframe
+                        key={epubPreview.chapterPath}
+                        data-testid="epub-preview-frame"
+                        title={epubPreview.title}
+                        srcDoc={epubPreview.srcDoc}
+                        sandbox=""
+                        className="w-full h-[520px] rounded border border-border bg-white"
+                        onLoad={() => setPreviewStatus('loaded')}
+                        onError={() => setPreviewStatus('failed')}
                       />
                     ) : (
-                      <div className="rounded border border-border p-4 text-sm text-muted-foreground">
-                        EPUB preview is not available in this view. Download the
-                        resource to open it in an EPUB reader.
+                      <div
+                        className="rounded border border-border p-4 text-sm text-muted-foreground"
+                        data-testid="epub-preview-error"
+                      >
+                        EPUB preview failed:{' '}
+                        {epubPreviewError || 'No renderable spine item found.'}
                       </div>
                     )}
                     {chapterHtml && (
@@ -442,6 +667,9 @@ export default function ParseChapterSection() {
                 onClick={() => {
                   setChapterText('');
                   setBinaryResource(undefined);
+                  setEpubPreview(undefined);
+                  setEpubPreviewError('');
+                  setPreviewStatus('idle');
                   setChapterPath('');
                   setShowRawHtml(false);
                 }}
