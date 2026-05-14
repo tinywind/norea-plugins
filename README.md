@@ -19,7 +19,55 @@ Current source plugins must provide `parseNovel()`, `parseNovelSince(novelPath, 
 | Aozora Bunko | <https://www.aozora.gr.jp/> | [Inclusion policy](https://www.aozora.gr.jp/aozora-manual/) | Aozora Bunko accepts works whose copyright has expired or whose rights holder permits publication. This sample filters the catalog to copyright-expired works only. |
 | OAPEN Library | <https://library.oapen.org/> | [REST API guide](https://www.oapen.org/article/8185269-search-using-a-rest-api) | OAPEN provides peer-reviewed open access books and an official REST API with metadata and bitstream links. Individual book licenses still need attribution. |
 | Komga | User-provided server URL | [Komga API documentation](https://komga.org/docs/openapi/komga-api) | Komga is self-hosted. Legal status depends on the user's own library, so it is safe as a connector pattern but must not ship sample copyrighted books. See [docs/komga-plugin.md](./docs/komga-plugin.md) for current host requirements. |
+| GitHub Docs | User-provided repository | [GitHub REST API documentation](https://docs.github.com/en/rest) | GitHub Docs is a connector for user-owned repositories. One installed source instance represents one configured work folder and does not ship sample copyrighted content. |
 | Dev Content Type Fixture | Local dev server static files | Local fixture content | Development-only smoke fixture for Norea's per-chapter `html`, `text`, and `pdf` content types. It does not contact external sites. |
+
+## GitHub Docs Source
+
+`GitHub Docs` is a `multiSource` plugin. The catalog entry is installed through
+Norea's `Add GitHub source` flow, and each installed source instance maps one
+GitHub repository folder to one Norea work.
+
+Required fields:
+
+| Field | Meaning |
+| --- | --- |
+| Work title | The Norea work title shown in the source catalog and novel view. |
+| Repository | GitHub repository in `owner/repo` form. |
+| Ref | Optional branch, tag, or commit. If omitted, GitHub's default branch is used. |
+| Work folder | Repository path that acts as the chapter root. URL-encoded path segments are accepted and decoded before GitHub tree matching. |
+| Chapter files | Comma- or newline-separated glob/regexp patterns matched against both the file name and the work-folder-relative chapter path. |
+| Exclude files | Optional comma- or newline-separated glob/regexp patterns matched after `Chapter files`. |
+| GitHub token | Optional for public repositories and required for private repositories. GitHub returns `404` for private repositories when the token is missing or lacks access. |
+
+The chapter name returned to Norea is the path relative to `Work folder`. For a
+file at:
+
+```text
+works/my-novel/manuscripts/arc-001/ch-001.md
+```
+
+with `Work folder` set to:
+
+```text
+works/my-novel/manuscripts
+```
+
+the chapter name is:
+
+```text
+arc-001/ch-001.md
+```
+
+Use `regex:` for exact path requirements. This includes `arc-001/ch-001.md` but
+excludes `arc-001-legacy/ch-001.md`:
+
+```text
+regex:^arc-[0-9]{3}/ch-[0-9]+\.md$
+```
+
+Use `glob:` when a pattern contains regexp-looking characters but must be
+handled as a glob.
 
 ## Source Policy
 
@@ -60,6 +108,18 @@ For desktop smoke testing, keep `USER_CONTENT_BASE` and the fixture plugin's
 `baseUrl` setting at `http://localhost:3000`. For the Android emulator, set both
 values to `http://10.0.2.2:3000` before generating the dev manifest and before
 using the installed fixture source in Norea.
+
+After changing plugin source code, regenerate the compiled JavaScript and the
+manifest before testing through Norea:
+
+```bash
+npm run build:compile
+npm run build:manifest:dev
+```
+
+Existing installed source instances keep the plugin JavaScript that was stored
+when they were installed. Uninstall and reinstall the source instance in Norea
+when testing a plugin contract or input-shape change.
 
 Generate the plugin manifest:
 
