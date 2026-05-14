@@ -77,24 +77,25 @@ class ExamplePlugin implements Plugin.PluginBase {
 export default new ExamplePlugin();
 ```
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `id` | yes | Stable plugin id. Must match the repository manifest entry. |
-| `name` | yes | Display name shown in the app. |
-| `icon` | yes | Path under `public/static`, without the `public/static/` prefix. |
-| `getBaseUrl()` | yes | Returns the runtime base URL used by the host for navigation, URL fallback, and fetch context. |
-| `version` | yes | Semver-style plugin version. |
-| `imageRequestInit` | no | Extra request init for cover image requests. |
-| `filters` | no | Filter schema used by `popularNovels`. |
-| `pluginInputs` | no | App-managed input schema for sources that need user-provided values. |
-| `pluginSettings` | no | Compatibility alias for hosts that support upstream-style plugin settings. |
-| `popularNovels(pageNo, options)` | yes | Returns a page of source items. |
-| `parseNovel(novelPath)` | yes | Returns metadata and chapter list for one source item. |
-| `parseNovelSince(novelPath, sinceChapterNumber)` | yes | Returns the same metadata fields as `parseNovel`, with chapters starting at `sinceChapterNumber` when the plugin can optimize. Returning the full list is allowed. |
-| `parseChapter(chapterPath)` | yes | Returns content for one chapter. The chapter row's `contentType` tells the host whether the string is HTML, plain text, or a PDF resource. |
-| `searchNovels(searchTerm, pageNo)` | yes | Returns a page of search results. |
-| `resolveUrl(path, isNovel?)` | no | Converts opaque plugin paths into browser URLs. |
-| `parsePage(novelPath, page)` | page plugins only | Returns additional chapter pages for paginated sources. |
+| Field                                            | Required          | Description                                                                                                                                                        |
+| ------------------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                                             | yes               | Stable plugin id. Must match the repository manifest entry.                                                                                                        |
+| `name`                                           | yes               | Display name shown in the app.                                                                                                                                     |
+| `icon`                                           | yes               | Path under `public/static`, without the `public/static/` prefix.                                                                                                   |
+| `getBaseUrl()`                                   | yes               | Returns the runtime base URL used by the host for navigation, URL fallback, and fetch context.                                                                     |
+| `version`                                        | yes               | Semver-style plugin version.                                                                                                                                       |
+| `imageRequestInit`                               | no                | Extra request init for cover image requests.                                                                                                                       |
+| `filters`                                        | no                | Filter schema used by `popularNovels`.                                                                                                                             |
+| `pluginInputs`                                   | no                | App-managed input schema for sources that need user-provided values.                                                                                               |
+| `pluginSettings`                                 | no                | Compatibility alias for hosts that support upstream-style plugin settings.                                                                                         |
+| `popularNovels(pageNo, options)`                 | yes               | Returns a page of source items.                                                                                                                                    |
+| `parseNovel(novelPath)`                          | yes               | Returns metadata and chapter list for one source item.                                                                                                             |
+| `parseNovelSince(novelPath, sinceChapterNumber)` | yes               | Returns the same metadata fields as `parseNovel`, with chapters starting at `sinceChapterNumber` when the plugin can optimize. Returning the full list is allowed. |
+| `parseChapter(chapterPath)`                      | yes               | Returns string content for one chapter. HTML/text chapters use this directly; PDF/EPUB chapters use it as a readable fallback.                                     |
+| `parseChapterResource(chapterPath)`              | no                | Returns a binary buffer resource for PDF/EPUB chapters when the plugin supports first-class binary transfer.                                                       |
+| `searchNovels(searchTerm, pageNo)`               | yes               | Returns a page of search results.                                                                                                                                  |
+| `resolveUrl(path, isNovel?)`                     | no                | Converts opaque plugin paths into browser URLs.                                                                                                                    |
+| `parsePage(novelPath, page)`                     | page plugins only | Returns additional chapter pages for paginated sources.                                                                                                            |
 
 ### `id`
 
@@ -224,13 +225,13 @@ by `chapterNumber` in ascending reading order.
 
 ### `parseChapter`
 
-`parseChapter` receives a `ChapterItem.path` and returns chapter content. For
-`contentType: 'html'`, return reader-ready HTML without source chrome or scripts.
-The Norea host resolves `<img src>` values relative to `resolveUrl(path, false)`
-or the chapter path, downloads those media files locally, and rewrites the saved
-HTML to local media URLs. For `contentType: 'text'`, return raw plain text; the
-host escapes it. For `contentType: 'pdf'`, return a readable HTML fallback or a
-source link while the host records the chapter as a PDF-backed item.
+`parseChapter` receives a `ChapterItem.path` and returns string chapter content.
+For `contentType: 'html'`, return reader-ready HTML without source chrome or
+scripts. The Norea host resolves `<img src>` values relative to
+`resolveUrl(path, false)` or the chapter path, downloads those media files
+locally, and rewrites the saved HTML to local media URLs. For
+`contentType: 'text'`, return raw plain text; the host escapes it. For
+`contentType: 'pdf'` or `contentType: 'epub'`, return a readable HTML fallback.
 
 ```ts
 async parseChapter(chapterPath: string): Promise<string> {
@@ -238,6 +239,52 @@ async parseChapter(chapterPath: string): Promise<string> {
   const html = await response.text();
   const $ = parseHTML(html);
   return $('main').html() || '';
+}
+```
+
+### `parseChapterResource`
+
+`parseChapterResource` is optional and only needed for plugins that can return
+PDF or EPUB bytes directly. Return an `ArrayBuffer` or `Uint8Array`; do not
+return base64, token-bearing URLs, request headers, or request init objects in
+plugin output. `parseChapter()` remains required and should return a readable
+HTML fallback for the same chapter path.
+
+```ts
+type ChapterBinaryResource = {
+  type: 'binary';
+  contentType: 'pdf' | 'epub';
+  mediaType: 'application/pdf' | 'application/epub+zip';
+  filename?: string;
+  byteLength: number;
+  bytes: ArrayBuffer | Uint8Array;
+  sha256?: string;
+  fallbackHtml?: string;
+};
+```
+
+Plugins must fetch protected binary resources themselves through host-supported
+fetch helpers and return only bytes plus metadata. Private raw/download URLs,
+authorization headers, cookies, and request options must not appear in
+`NovelItem.path`, `ChapterItem.path`, `parseChapter()` output, or
+`parseChapterResource()` output.
+
+```ts
+async parseChapterResource(
+  chapterPath: string,
+): Promise<Plugin.ChapterBinaryResource> {
+  const response = await fetchApi(new URL(chapterPath, this.getBaseUrl()).href);
+  const bytes = await response.arrayBuffer();
+
+  return {
+    type: 'binary',
+    contentType: 'pdf',
+    mediaType: 'application/pdf',
+    filename: 'chapter.pdf',
+    byteLength: bytes.byteLength,
+    bytes,
+    fallbackHtml: '<p>PDF resource attached.</p>',
+  };
 }
 ```
 
@@ -265,11 +312,11 @@ async searchNovels(
 
 `NovelItem` is the lightweight result shown in source listings and search.
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | yes | Title shown in listings. |
-| `path` | `string` | yes | Opaque plugin-owned identifier. |
-| `cover` | `string` | no | Cover URL. Relative URLs should be resolvable by the host or normalized by the plugin. |
+| Field   | Type     | Required | Description                                                                            |
+| ------- | -------- | -------- | -------------------------------------------------------------------------------------- |
+| `name`  | `string` | yes      | Title shown in listings.                                                               |
+| `path`  | `string` | yes      | Opaque plugin-owned identifier.                                                        |
+| `cover` | `string` | no       | Cover URL. Relative URLs should be resolvable by the host or normalized by the plugin. |
 
 `path` does not have to be a browser URL. It can be a relative path, an API id,
 or an encoded payload as long as the same plugin can handle it later.
@@ -278,31 +325,36 @@ or an encoded payload as long as the same plugin can handle it later.
 
 `SourceNovel` extends `NovelItem` with metadata and chapters.
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | yes | Novel title. |
-| `path` | `string` | yes | Same opaque path passed to `parseNovel`. |
-| `cover` | `string` | no | Cover URL. |
-| `genres` | `string` | no | Comma-separated genre list. |
-| `summary` | `string` | no | Plain text or simple HTML summary. |
-| `author` | `string` | no | Author names. |
-| `artist` | `string` | no | Artist names. |
-| `status` | `string` | no | Reading/publication status. Prefer values from `NovelStatus` when possible. |
-| `rating` | `number` | no | Rating out of 5. |
-| `chapters` | `ChapterItem[]` | yes | Chapter list. Use an empty array when known empty. |
+| Field      | Type            | Required | Description                                                                 |
+| ---------- | --------------- | -------- | --------------------------------------------------------------------------- |
+| `name`     | `string`        | yes      | Novel title.                                                                |
+| `path`     | `string`        | yes      | Same opaque path passed to `parseNovel`.                                    |
+| `cover`    | `string`        | no       | Cover URL.                                                                  |
+| `genres`   | `string`        | no       | Comma-separated genre list.                                                 |
+| `summary`  | `string`        | no       | Plain text or simple HTML summary.                                          |
+| `author`   | `string`        | no       | Author names.                                                               |
+| `artist`   | `string`        | no       | Artist names.                                                               |
+| `status`   | `string`        | no       | Reading/publication status. Prefer values from `NovelStatus` when possible. |
+| `rating`   | `number`        | no       | Rating out of 5.                                                            |
+| `chapters` | `ChapterItem[]` | yes      | Chapter list. Use an empty array when known empty.                          |
 
 ## ChapterItem
 
 `ChapterItem` is the lightweight chapter row stored by the host.
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | yes | Chapter label shown in the reader. |
-| `path` | `string` | yes | Opaque plugin-owned chapter identifier. |
-| `contentType` | `'html'`, `'text'`, or `'pdf'` | no | Per-chapter content type. Defaults to `'html'` for legacy plugins. |
-| `releaseTime` | `string` or `null` | no | ISO date, `YYYY-MM-DD`, or source-provided date string. |
-| `chapterNumber` | `number` | yes | Stable numeric ordering key within the novel. Use the source number when available; otherwise calculate a deterministic one-based reading-order number. Values must be finite and unique. |
-| `page` | `string` | no | Pagination cursor for page-based plugins. |
+| Field           | Type                                     | Required | Description                                                                                                                                                                               |
+| --------------- | ---------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`          | `string`                                 | yes      | Chapter label shown in the reader.                                                                                                                                                        |
+| `path`          | `string`                                 | yes      | Opaque plugin-owned chapter identifier.                                                                                                                                                   |
+| `contentType`   | `'html'`, `'text'`, `'pdf'`, or `'epub'` | no       | Per-chapter content type. Defaults to `'html'` for legacy plugins.                                                                                                                        |
+| `releaseTime`   | `string` or `null`                       | no       | ISO date, `YYYY-MM-DD`, or source-provided date string.                                                                                                                                   |
+| `chapterNumber` | `number`                                 | yes      | Stable numeric ordering key within the novel. Use the source number when available; otherwise calculate a deterministic one-based reading-order number. Values must be finite and unique. |
+| `page`          | `string`                                 | no       | Pagination cursor for page-based plugins.                                                                                                                                                 |
+
+For PDF and EPUB chapters, set `contentType` to `'pdf'` or `'epub'`, keep
+`path` as an opaque plugin-owned identifier, and implement `parseChapter()` as a
+safe readable fallback. Implement `parseChapterResource()` only when the plugin
+can return the actual binary bytes as `ArrayBuffer` or `Uint8Array`.
 
 ## Filters
 
@@ -328,13 +380,13 @@ filters = {
 } satisfies Filters;
 ```
 
-| FilterTypes member | Runtime value | `value` type | Requires `options` |
-| --- | --- | --- | --- |
-| `Picker` | `Picker` | `string` | yes |
-| `TextInput` | `Text` | `string` | no |
-| `Switch` | `Switch` | `boolean` | no |
-| `CheckboxGroup` | `Checkbox` | `string[]` | yes |
-| `ExcludableCheckboxGroup` | `XCheckbox` | `{ include?: string[]; exclude?: string[] }` | yes |
+| FilterTypes member        | Runtime value | `value` type                                 | Requires `options` |
+| ------------------------- | ------------- | -------------------------------------------- | ------------------ |
+| `Picker`                  | `Picker`      | `string`                                     | yes                |
+| `TextInput`               | `Text`        | `string`                                     | no                 |
+| `Switch`                  | `Switch`      | `boolean`                                    | no                 |
+| `CheckboxGroup`           | `Checkbox`    | `string[]`                                   | yes                |
+| `ExcludableCheckboxGroup` | `XCheckbox`   | `{ include?: string[]; exclude?: string[] }` | yes                |
 
 Use `include` and `exclude` property names for excludable checkbox values.
 
@@ -443,7 +495,8 @@ await fetchApi('https://library.oapen.org/rest/search?query=dc.type:book', {
   headers: {
     Accept: 'application/json',
   },
-  contextUrl: 'https://library.oapen.org/rest/search?query=dc.type:book&limit=1',
+  contextUrl:
+    'https://library.oapen.org/rest/search?query=dc.type:book&limit=1',
 });
 ```
 
@@ -452,11 +505,7 @@ instead of a browser `fetch()` call. These helpers use the app's task-owned
 scraper WebView session.
 
 ```ts
-import {
-  webViewFetch,
-  webViewLoad,
-  webViewNavigate,
-} from '@libs/webView';
+import { webViewFetch, webViewLoad, webViewNavigate } from '@libs/webView';
 
 const loaded = await webViewLoad('https://example.com/book/1');
 const html = loaded.html;
