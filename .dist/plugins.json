@@ -1,6 +1,6 @@
 [
 	{
-		"id": "projectgutenberg",
+		"id": "project-gutenberg",
 		"name": "Project Gutenberg",
 		"lang": "English",
 		"version": "0.1.0",
@@ -8,7 +8,7 @@
 		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png"
 	},
 	{
-		"id": "standardebooks",
+		"id": "standard-ebooks",
 		"name": "Standard Ebooks",
 		"lang": "English",
 		"version": "0.1.0",
@@ -16,7 +16,7 @@
 		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png"
 	},
 	{
-		"id": "aozorabunko",
+		"id": "aozora-bunko",
 		"name": "Aozora Bunko",
 		"lang": "Japanese",
 		"version": "0.1.0",
@@ -24,7 +24,7 @@
 		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/main-dist/plugins/v0.1.0/public/static/siteNotAvailable.png"
 	},
 	{
-		"id": "githubdocs",
+		"id": "github-docs",
 		"name": "GitHub Docs",
 		"lang": "Multi",
 		"version": "0.1.0",
