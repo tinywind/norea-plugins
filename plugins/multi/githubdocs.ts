@@ -298,7 +298,7 @@ function naturalCompare(left: string, right: string) {
 }
 
 class GitHubDocs implements Plugin.PluginBase {
-  id = 'githubdocs';
+  id = 'github-docs';
   name = 'GitHub Docs';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
@@ -622,7 +622,7 @@ class GitHubDocs implements Plugin.PluginBase {
   private isConfigured() {
     return Boolean(
       inputValue('repository') ||
-      (inputValue('repositories') && inputValue('workPathPattern')),
+        (inputValue('repositories') && inputValue('workPathPattern')),
     );
   }
 

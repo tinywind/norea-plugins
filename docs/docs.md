@@ -99,11 +99,12 @@ export default new ExamplePlugin();
 
 ### `id`
 
-Use lowercase, stable ids. Changing an id makes the host treat the plugin as a
-different source.
+Use lowercase, stable kebab-case ids. Use hyphens as word separators instead
+of spaces, dots, or joined multi-word names. Changing an id makes the host treat
+the plugin as a different source.
 
 ```ts
-id = 'standardebooks';
+id = 'standard-ebooks';
 ```
 
 ### `name`

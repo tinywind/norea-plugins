@@ -174,7 +174,7 @@ async function loadCatalog() {
 }
 
 class AozoraBunko implements Plugin.PluginBase {
-  id = 'aozorabunko';
+  id = 'aozora-bunko';
   name = 'Aozora Bunko';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';

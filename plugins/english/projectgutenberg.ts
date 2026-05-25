@@ -69,7 +69,7 @@ function extractField(content: string, label: string, stopLabels: string[]) {
 }
 
 class ProjectGutenberg implements Plugin.PluginBase {
-  id = 'projectgutenberg';
+  id = 'project-gutenberg';
   name = 'Project Gutenberg';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';

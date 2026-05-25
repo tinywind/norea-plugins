@@ -27,7 +27,7 @@ function requestUrl(path: string) {
 }
 
 class StandardEbooks implements Plugin.PluginBase {
-  id = 'standardebooks';
+  id = 'standard-ebooks';
   name = 'Standard Ebooks';
   version = '0.1.0';
   icon = 'siteNotAvailable.png';
