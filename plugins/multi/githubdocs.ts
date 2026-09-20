@@ -301,7 +301,7 @@ class GitHubDocs implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'github-docs';
   name = 'GitHub Docs';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   installMode = 'multiSource' as const;
 
@@ -393,15 +393,16 @@ class GitHubDocs implements Plugin.PluginBase {
       'application/vnd.github.raw+json',
     );
     const text = await response.text();
+    const content =
+      payload.contentType === 'text'
+        ? text
+        : /\.(md|markdown)$/i.test(payload.filePath)
+          ? await this.renderMarkdown(text, payload)
+          : sanitizeHtml(text, !payload.private);
     return {
       type: 'content',
       contentType: payload.contentType,
-      content:
-        payload.contentType === 'text'
-          ? text
-          : /\.(md|markdown)$/i.test(payload.filePath)
-            ? this.renderMarkdown(text, payload)
-            : sanitizeHtml(text, !payload.private),
+      content,
       baseUrl: this.resolveUrl(chapterPath),
     };
   }
@@ -458,10 +459,16 @@ class GitHubDocs implements Plugin.PluginBase {
     );
     const works = new Map<string, Plugin.NovelItem>();
 
-    for (const config of this.repoConfigs()) {
-      const context = await this.repoContext(config);
-      const entries = await this.treeEntries(context);
-      const candidates = this.workCandidates(entries);
+    const contexts = await Promise.all(
+      this.repoConfigs().map(config => this.repoContext(config)),
+    );
+    const entriesByRepo = await Promise.all(
+      contexts.map(context => this.treeEntries(context)),
+    );
+
+    for (let index = 0; index < contexts.length; index += 1) {
+      const context = contexts[index];
+      const candidates = this.workCandidates(entriesByRepo[index]);
 
       for (const rootPath of candidates) {
         if (rootPath.length > MAX_PATH_LENGTH) continue;
@@ -754,25 +761,33 @@ class GitHubDocs implements Plugin.PluginBase {
   }
 
   private async resolveTreeSha(config: RepoConfig, ref: string) {
-    const branch = await this.githubJsonOrUndefined<GitHubBranchResponse>(
-      `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/branches/${encodeURIComponent(ref)}`,
-    );
-    const branchTreeSha = branch?.commit?.commit?.tree?.sha;
-    if (branchTreeSha) return branchTreeSha;
+    const isCommitSha = /^[0-9a-f]{40}$/.test(ref);
+    const isTagRef = ref.startsWith('refs/tags/');
 
-    const tagRef = await this.githubJsonOrUndefined<GitHubRefResponse>(
-      `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/ref/tags/${encodeURIComponent(ref)}`,
-    );
-    const tagObject = tagRef?.object;
-    if (tagObject?.sha && tagObject.type === 'tag') {
-      const tag = await this.githubJson<GitHubTagResponse>(
-        `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/tags/${tagObject.sha}`,
+    if (!isCommitSha && !isTagRef) {
+      const branch = await this.githubJsonOrUndefined<GitHubBranchResponse>(
+        `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/branches/${encodeURIComponent(ref)}`,
       );
-      const commitSha = tag.object?.sha;
-      if (commitSha) return this.commitTreeSha(config, commitSha);
+      const branchTreeSha = branch?.commit?.commit?.tree?.sha;
+      if (branchTreeSha) return branchTreeSha;
     }
-    if (tagObject?.sha && tagObject.type === 'commit') {
-      return this.commitTreeSha(config, tagObject.sha);
+
+    if (!isCommitSha) {
+      const tagName = isTagRef ? ref.slice('refs/tags/'.length) : ref;
+      const tagRef = await this.githubJsonOrUndefined<GitHubRefResponse>(
+        `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/ref/tags/${encodeURIComponent(tagName)}`,
+      );
+      const tagObject = tagRef?.object;
+      if (tagObject?.sha && tagObject.type === 'tag') {
+        const tag = await this.githubJson<GitHubTagResponse>(
+          `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/tags/${tagObject.sha}`,
+        );
+        const commitSha = tag.object?.sha;
+        if (commitSha) return this.commitTreeSha(config, commitSha);
+      }
+      if (tagObject?.sha && tagObject.type === 'commit') {
+        return this.commitTreeSha(config, tagObject.sha);
+      }
     }
 
     const commit = await this.githubJsonOrUndefined<GitHubCommitResponse>(
@@ -810,22 +825,32 @@ class GitHubDocs implements Plugin.PluginBase {
     context: Pick<RepoContext, 'owner' | 'repo'>,
     treeSha: string,
     prefix: string,
+    limit = MAX_TREE_ENTRIES,
   ): Promise<GitTreeEntry[]> {
     const response = await this.githubJson<GitTreeResponse>(
       `/repos/${encodeURIComponent(context.owner)}/${encodeURIComponent(context.repo)}/git/trees/${treeSha}`,
     );
+    const levelEntries = (response.tree ?? []).slice(0, limit).map(entry => ({
+      ...entry,
+      path: [prefix, entry.path].filter(Boolean).join('/'),
+    }));
+    const remaining = limit - levelEntries.length;
+    if (remaining <= 0) return levelEntries;
+
+    // Sibling directories share the remaining budget; the final slice keeps
+    // the merged result bounded.
+    const subtrees = await Promise.all(
+      levelEntries.map(entry =>
+        entry.type === 'tree' && entry.sha
+          ? this.walkTree(context, entry.sha, entry.path, remaining)
+          : [],
+      ),
+    );
     const entries: GitTreeEntry[] = [];
 
-    for (const entry of response.tree ?? []) {
-      const path = [prefix, entry.path].filter(Boolean).join('/');
-      const nextEntry = { ...entry, path };
-      entries.push(nextEntry);
-      if (entries.length >= MAX_TREE_ENTRIES) return entries;
-      if (entry.type === 'tree' && entry.sha) {
-        entries.push(...(await this.walkTree(context, entry.sha, path)));
-      }
-      if (entries.length >= MAX_TREE_ENTRIES)
-        return entries.slice(0, MAX_TREE_ENTRIES);
+    for (let index = 0; index < levelEntries.length; index += 1) {
+      entries.push(levelEntries[index], ...subtrees[index]);
+      if (entries.length >= limit) return entries.slice(0, limit);
     }
 
     return entries;

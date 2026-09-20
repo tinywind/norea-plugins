@@ -23,6 +23,8 @@ type ChapterPayload = {
   totalPages: number;
 };
 
+let episodesPromise: Promise<PepperCarrotEpisode[]> | undefined;
+
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
 }
@@ -170,7 +172,7 @@ class PepperCarrot implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'pepper-carrot';
   name = 'Pepper&Carrot';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   pluginInputs = {
     [LANGUAGE_INPUT]: {
@@ -328,7 +330,15 @@ class PepperCarrot implements Plugin.PluginBase {
     };
   }
 
-  private async episodes() {
+  private episodes() {
+    episodesPromise ||= this.loadEpisodes().catch(error => {
+      episodesPromise = undefined;
+      throw error;
+    });
+    return episodesPromise;
+  }
+
+  private async loadEpisodes() {
     const response = await fetchApi(EPISODES_URL, {
       headers: { Accept: 'application/json' },
       contextUrl: `${SITE_URL}en/webcomics/peppercarrot.html`,

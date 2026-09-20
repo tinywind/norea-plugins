@@ -26,11 +26,21 @@ function requestUrl(path: string) {
   return `${BASE_URL}/${path.replace(/^\/+/, '')}`;
 }
 
+async function fetchHtml(url: string) {
+  const response = await fetchApi(url);
+  if (!response.ok) {
+    throw new Error(
+      `Standard Ebooks request failed: HTTP ${response.status} for ${url}`,
+    );
+  }
+  return response.text();
+}
+
 class StandardEbooks implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'standard-ebooks';
   name = 'Standard Ebooks';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE;
@@ -38,8 +48,7 @@ class StandardEbooks implements Plugin.PluginBase {
 
   async popularNovels(pageNo: number): Promise<Plugin.NovelItem[]> {
     const url = `${BASE_URL}/ebooks?sort=popularity&page=${pageNo}`;
-    const response = await fetchApi(url);
-    const html = await response.text();
+    const html = await fetchHtml(url);
     return this.parseBookList(html);
   }
 
@@ -51,17 +60,16 @@ class StandardEbooks implements Plugin.PluginBase {
       query: searchTerm,
       page: pageNo.toString(),
     });
-    const response = await fetchApi(`${BASE_URL}/ebooks?${params.toString()}`);
-    const html = await response.text();
+    const html = await fetchHtml(`${BASE_URL}/ebooks?${params.toString()}`);
     return this.parseBookList(html);
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
-    const response = await fetchApi(requestUrl(novelPath));
-    const html = await response.text();
+    const [html, tocHtml] = await Promise.all([
+      fetchHtml(requestUrl(novelPath)),
+      fetchHtml(requestUrl(`${novelPath}/text`)),
+    ]);
     const $ = parseHTML(html);
-    const tocResponse = await fetchApi(requestUrl(`${novelPath}/text`));
-    const tocHtml = await tocResponse.text();
     const toc = parseHTML(tocHtml);
     const chapters: Plugin.ChapterItem[] = [];
 
@@ -123,6 +131,7 @@ class StandardEbooks implements Plugin.PluginBase {
   }
 
   resolveUrl(path: string) {
+    if (/^https?:\/\//i.test(path)) return path;
     return requestUrl(path);
   }
 

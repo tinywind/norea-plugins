@@ -9,6 +9,7 @@ const SITE_URL = `${BASE_URL}/`;
 const PAGE_SIZE = 25;
 const HTML_PREFIX = 'gutenberg-html:';
 const USER_AGENT = 'Norea/0.1 (+https://github.com/tinywind/norea)';
+const OPDS_ACCEPT = 'application/atom+xml, application/xml;q=0.9, */*;q=0.8';
 type CheerioSelection = ReturnType<CheerioAPI>;
 
 function requestInit(accept: string) {
@@ -18,6 +19,16 @@ function requestInit(accept: string) {
       'User-Agent': USER_AGENT,
     },
   };
+}
+
+async function fetchOpds(url: string) {
+  const response = await fetchApi(url, requestInit(OPDS_ACCEPT));
+  if (!response.ok) {
+    throw new Error(
+      `Project Gutenberg request failed: HTTP ${response.status} for ${url}`,
+    );
+  }
+  return response.text();
 }
 
 function cleanText(value?: string | null) {
@@ -72,7 +83,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'project-gutenberg';
   name = 'Project Gutenberg';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -82,11 +93,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
     const url = `${BASE_URL}/ebooks/search.opds/?sort_order=downloads&start_index=${pageStart(
       pageNo,
     )}`;
-    const result = await fetchApi(
-      url,
-      requestInit('application/atom+xml, application/xml;q=0.9, */*;q=0.8'),
-    );
-    const xml = await result.text();
+    const xml = await fetchOpds(url);
     return this.parseOpdsList(xml);
   }
 
@@ -97,21 +104,13 @@ class ProjectGutenberg implements Plugin.PluginBase {
     const url = `${BASE_URL}/ebooks/search.opds/?query=${encodeURIComponent(
       query,
     )}&start_index=${pageStart(pageNo)}`;
-    const result = await fetchApi(
-      url,
-      requestInit('application/atom+xml, application/xml;q=0.9, */*;q=0.8'),
-    );
-    const xml = await result.text();
+    const xml = await fetchOpds(url);
     return this.parseOpdsList(xml);
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = new URL(novelPath, SITE_URL).href;
-    const result = await fetchApi(
-      url,
-      requestInit('application/atom+xml, application/xml;q=0.9, */*;q=0.8'),
-    );
-    const xml = await result.text();
+    const xml = await fetchOpds(url);
     const $ = parseHTML(xml, { xmlMode: true });
     const entry = this.findEbookEntry($);
 

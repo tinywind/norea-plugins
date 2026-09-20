@@ -29,7 +29,15 @@ type AozoraBook = {
   publishedAt: string;
 };
 
-let catalogPromise: Promise<AozoraBook[]> | undefined;
+type CatalogBook = AozoraBook & { searchKey: string };
+
+type AozoraCatalog = {
+  books: CatalogBook[];
+  popular: CatalogBook[];
+  byId: Map<string, CatalogBook>;
+};
+
+let catalogPromise: Promise<AozoraCatalog> | undefined;
 
 function requestInit(accept: string) {
   return {
@@ -114,7 +122,7 @@ function cleanAozoraText(text: string) {
   return normalized.trim();
 }
 
-async function loadCatalog() {
+async function loadCatalog(): Promise<AozoraCatalog> {
   const response = await fetchApi(
     CATALOG_ZIP_URL,
     requestInit('application/zip, */*;q=0.8'),
@@ -165,49 +173,53 @@ async function loadCatalog() {
     }
   }
 
-  return Array.from(books.values()).map(book => ({
-    ...book,
-    author: Array.from(new Set(book.authors)).join(', '),
-  }));
+  const catalog = Array.from(books.values()).map(book => {
+    const author = Array.from(new Set(book.authors)).join(', ');
+    return {
+      ...book,
+      author,
+      searchKey: [book.name, author, book.genres].join(' ').toLowerCase(),
+    };
+  });
+
+  return {
+    books: catalog,
+    popular: [...catalog].sort((a, b) =>
+      b.publishedAt.localeCompare(a.publishedAt),
+    ),
+    byId: new Map<string, CatalogBook>(catalog.map(book => [book.id, book])),
+  };
 }
 
 class AozoraBunko implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'aozora-bunko';
   name = 'Aozora Bunko';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
   }
 
   async popularNovels(pageNo: number) {
-    const catalog = await this.catalog();
-    const sorted = [...catalog].sort((a, b) =>
-      b.publishedAt.localeCompare(a.publishedAt),
-    );
-    return this.toNovelItems(sorted, pageNo);
+    const { popular } = await this.catalog();
+    return this.toNovelItems(popular, pageNo);
   }
 
   async searchNovels(searchTerm: string, pageNo: number) {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return this.popularNovels(pageNo);
 
-    const catalog = await this.catalog();
-    const results = catalog.filter(book =>
-      [book.name, book.author, book.genres]
-        .join(' ')
-        .toLowerCase()
-        .includes(query),
-    );
+    const { books } = await this.catalog();
+    const results = books.filter(book => book.searchKey.includes(query));
 
     return this.toNovelItems(results, pageNo);
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
-    const catalog = await this.catalog();
+    const { byId } = await this.catalog();
     const { id } = parseBookPath(novelPath);
-    const book = catalog.find(item => item.id === id);
+    const book = byId.get(id);
 
     if (!book) {
       return {
@@ -326,7 +338,10 @@ class AozoraBunko implements Plugin.PluginBase {
   }
 
   private async catalog() {
-    catalogPromise ||= loadCatalog();
+    catalogPromise ||= loadCatalog().catch(error => {
+      catalogPromise = undefined;
+      throw error;
+    });
     return catalogPromise;
   }
 

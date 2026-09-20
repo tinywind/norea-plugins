@@ -8,6 +8,8 @@ import { inputs } from '@libs/pluginInputs';
 
 const DISPLAY_SITE = 'https://komga.org/';
 const URL_SETTING_KEY = 'url';
+const MANIFEST_CONCURRENCY = 5;
+const PREDICTABLE_PAGE_COUNT_PROFILES = ['DIVINA', 'PDF'];
 
 type RequestOptions = {
   method?: string;
@@ -40,7 +42,13 @@ type KomgaBook = {
   metadata: {
     title?: string;
   };
+  media?: {
+    pagesCount?: number;
+    mediaProfile?: string;
+  };
 };
+
+type UnnumberedChapter = Omit<Plugin.ChapterItem, 'chapterNumber'>;
 
 type KomgaManifest = {
   toc?: KomgaTocItem[];
@@ -114,12 +122,44 @@ function responseContentType(response: Response) {
   return response.headers.get('content-type')?.split(';')[0].trim() ?? '';
 }
 
+// Komga derives EPUB page counts from reading positions rather than spine
+// entries, so only image and PDF books let the book list predict how many
+// reading-order entries their manifest will have.
+function predictedChapterCount(book: KomgaBook) {
+  const pagesCount = book.media?.pagesCount;
+  if (
+    typeof pagesCount !== 'number' ||
+    !Number.isInteger(pagesCount) ||
+    pagesCount < 0 ||
+    !PREDICTABLE_PAGE_COUNT_PROFILES.includes(book.media?.mediaProfile ?? '')
+  ) {
+    return undefined;
+  }
+  return pagesCount;
+}
+
+function numberChapters(
+  bookChapters: UnnumberedChapter[][],
+  firstChapterNumber: number,
+) {
+  const chapters: Plugin.ChapterItem[] = [];
+  for (const chapterList of bookChapters) {
+    for (const chapter of chapterList) {
+      chapters.push({
+        ...chapter,
+        chapterNumber: firstChapterNumber + chapters.length,
+      });
+    }
+  }
+  return chapters;
+}
+
 class KomgaPlugin implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.3';
+  version = '1.0.4';
 
   getBaseUrl(): string {
     return this.configuredServerUrl() || DISPLAY_SITE;
@@ -282,9 +322,47 @@ class KomgaPlugin implements Plugin.PluginBase {
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
+    const { novel, books } = await this.seriesDetail(novelPath);
+    novel.chapters = numberChapters(await this.bookChapters(books), 1);
+    return novel;
+  }
+
+  async parseNovelSince(
+    novelPath: string,
+    sinceChapterNumber: number,
+  ): Promise<Plugin.SourceNovel> {
+    const { novel, books } = await this.seriesDetail(novelPath);
+    const predictedCounts = books.map(predictedChapterCount);
+    let skippedBooks = 0;
+    let skippedChapters = 0;
+
+    if (
+      predictedCounts.every((count): count is number => count !== undefined)
+    ) {
+      while (
+        skippedBooks < books.length &&
+        skippedChapters + predictedCounts[skippedBooks] < sinceChapterNumber
+      ) {
+        skippedChapters += predictedCounts[skippedBooks];
+        skippedBooks += 1;
+      }
+    }
+
+    const chapters = numberChapters(
+      await this.bookChapters(books.slice(skippedBooks)),
+      skippedChapters + 1,
+    );
+    novel.chapters = chapters.filter(
+      chapter => chapter.chapterNumber >= sinceChapterNumber,
+    );
+    return novel;
+  }
+
+  private async seriesDetail(novelPath: string) {
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: 'Untitled',
+      chapters: [],
     };
 
     const baseUrl = this.serverUrl();
@@ -320,45 +398,59 @@ class KomgaPlugin implements Plugin.PluginBase {
 
     novel.summary = series.booksMetadata.summary;
 
-    const chapters: Plugin.ChapterItem[] = [];
-
     const booksResponse = await this.makeRequest(
       `api/v1/series/${series.id}/books?unpaged=true`,
     );
 
-    const booksData = JSON.parse(booksResponse).content as KomgaBook[];
+    const books = JSON.parse(booksResponse).content as KomgaBook[];
 
-    for (const book of booksData) {
-      const bookManifestResponse = await this.makeRequest(
-        `opds/v2/books/${book.id}/manifest`,
+    return { novel, books };
+  }
+
+  private async bookChapters(books: KomgaBook[]) {
+    const chapters: UnnumberedChapter[][] = [];
+
+    for (let index = 0; index < books.length; index += MANIFEST_CONCURRENCY) {
+      chapters.push(
+        ...(await Promise.all(
+          books
+            .slice(index, index + MANIFEST_CONCURRENCY)
+            .map(book => this.manifestChapters(book)),
+        )),
       );
-
-      const bookManifest = JSON.parse(bookManifestResponse) as KomgaManifest;
-
-      const toc = this.flattenArray(bookManifest.toc ?? []);
-      const readingOrder = bookManifest.readingOrder ?? [];
-
-      let i = 1;
-      for (const page of readingOrder) {
-        if (!page.href) continue;
-
-        const tocItem = toc.find(v => v.href?.split('#')[0] === page.href);
-        const title = tocItem ? tocItem.title : null;
-        chapters.push({
-          name: `${i}/${readingOrder.length} - ${book.metadata.title}${title ? ' - ' + title : ''}`,
-          path: 'opds/v2' + page.href.split('opds/v2').pop(),
-          chapterNumber: chapters.length + 1,
-          contentType: 'html',
-        });
-        i++;
-      }
     }
 
-    novel.chapters = chapters;
-    return novel;
+    return chapters;
   }
-  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
-    return this.parseNovel(novelPath);
+
+  private async manifestChapters(
+    book: KomgaBook,
+  ): Promise<UnnumberedChapter[]> {
+    const bookManifestResponse = await this.makeRequest(
+      `opds/v2/books/${book.id}/manifest`,
+    );
+
+    const bookManifest = JSON.parse(bookManifestResponse) as KomgaManifest;
+
+    const toc = this.flattenArray(bookManifest.toc ?? []);
+    const readingOrder = bookManifest.readingOrder ?? [];
+    const chapters: UnnumberedChapter[] = [];
+
+    let i = 1;
+    for (const page of readingOrder) {
+      if (!page.href) continue;
+
+      const tocItem = toc.find(v => v.href?.split('#')[0] === page.href);
+      const title = tocItem ? tocItem.title : null;
+      chapters.push({
+        name: `${i}/${readingOrder.length} - ${book.metadata.title}${title ? ' - ' + title : ''}`,
+        path: 'opds/v2' + page.href.split('opds/v2').pop(),
+        contentType: 'html',
+      });
+      i++;
+    }
+
+    return chapters;
   }
 
   getChapterAcquisitionPlan(): Plugin.ChapterAcquisitionPlan {
@@ -432,11 +524,9 @@ class KomgaPlugin implements Plugin.PluginBase {
       const height = $(image).attr('height');
 
       if (href) {
-        const img = $('<img />').attr({
-          src: absoluteUrl(baseUrl, href),
-          width: width || undefined,
-          height: height || undefined,
-        });
+        const img = $('<img />').attr('src', absoluteUrl(baseUrl, href));
+        if (width) img.attr('width', width);
+        if (height) img.attr('height', height);
         $(image).closest('svg').replaceWith(img);
       }
     });

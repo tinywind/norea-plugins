@@ -9,6 +9,8 @@ const HANDLE_PREFIX = 'handle/';
 const ITEM_PREFIX = 'item/';
 const LINK_PREFIX = 'link/';
 const FILE_PREFIX = 'oapen-file:';
+const MAX_BINARY_MB = 50;
+const MAX_BINARY_BYTES = MAX_BINARY_MB * 1024 * 1024;
 
 type OapenMetadata = {
   key?: string;
@@ -233,7 +235,7 @@ class OapenLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'oapen';
   name = 'OAPEN Library';
-  version = '0.1.3';
+  version = '0.1.4';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -356,6 +358,11 @@ class OapenLibrary implements Plugin.PluginBase {
         payload.fileUrl,
         requestInit('text/plain, */*'),
       );
+      if (!response.ok) {
+        throw new Error(
+          `Failed to download ${payload.label}: HTTP ${response.status}`,
+        );
+      }
       const text = await response.text();
       return {
         type: 'content',
@@ -385,6 +392,12 @@ class OapenLibrary implements Plugin.PluginBase {
     );
     if (!response.ok) {
       throw new Error(`Failed to download ${payload.label}.`);
+    }
+    const contentLength = Number(response.headers.get('content-length'));
+    if (contentLength > MAX_BINARY_BYTES) {
+      throw new Error(
+        `${payload.label} exceeds the ${MAX_BINARY_MB} MB download limit.`,
+      );
     }
     const bytes = await response.arrayBuffer();
 
@@ -417,7 +430,6 @@ class OapenLibrary implements Plugin.PluginBase {
   private async searchItems(query: string, pageNo: number) {
     const params = new URLSearchParams({
       query,
-      expand: 'metadata,bitstreams',
       limit: PAGE_SIZE.toString(),
       offset: pageOffset(pageNo).toString(),
     });
@@ -425,6 +437,9 @@ class OapenLibrary implements Plugin.PluginBase {
       `${REST_URL}/search?${params}`,
       requestInit(),
     );
+    if (!response.ok) {
+      throw new Error(`OAPEN search request failed: HTTP ${response.status}`);
+    }
     const data = JSON.parse(await response.text());
     return normalizeResults(data)
       .map(item => ({
@@ -436,6 +451,9 @@ class OapenLibrary implements Plugin.PluginBase {
 
   private async fetchItem(novelPath: string) {
     const response = await fetchApi(this.itemApiUrl(novelPath), requestInit());
+    if (!response.ok) {
+      throw new Error(`OAPEN item request failed: HTTP ${response.status}`);
+    }
     const data = JSON.parse(await response.text());
     return normalizeResults(data)[0];
   }

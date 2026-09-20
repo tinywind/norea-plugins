@@ -169,11 +169,13 @@ function requestInit() {
   };
 }
 
+const manifestPromises = new Map<string, Promise<IiifManifest>>();
+
 class NdlNextDigitalLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'ndl-next-digital-library';
   name = 'NDL Public Domain Manga';
-  version = '0.1.0';
+  version = '0.1.1';
   icon = 'siteNotAvailable.png';
 
   getBaseUrl() {
@@ -357,7 +359,19 @@ class NdlNextDigitalLibrary implements Plugin.PluginBase {
     return book;
   }
 
-  private async fetchManifest(pid: string): Promise<IiifManifest> {
+  private fetchManifest(pid: string) {
+    const pending = manifestPromises.get(pid);
+    if (pending) return pending;
+
+    const manifest = this.loadManifest(pid).catch(error => {
+      manifestPromises.delete(pid);
+      throw error;
+    });
+    manifestPromises.set(pid, manifest);
+    return manifest;
+  }
+
+  private async loadManifest(pid: string): Promise<IiifManifest> {
     const response = await fetchApi(
       `${IIIF_URL}${pid}/manifest.json`,
       requestInit(),
