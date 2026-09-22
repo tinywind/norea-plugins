@@ -499,6 +499,38 @@ if (fs.existsSync(fixtureArtifactPath)) {
   errors.push(`${fixtureArtifactPath} does not exist.`);
 }
 
+const fixturePdfPath =
+  'public/static/fixtures/content-types/chapters/pdf/chapter-1.pdf';
+try {
+  const pdf = fs.readFileSync(fixturePdfPath).toString('latin1');
+  const xrefOffset = Number(pdf.match(/startxref\s+(\d+)/)?.[1]);
+  if (!Number.isInteger(xrefOffset) || !pdf.startsWith('xref\n', xrefOffset)) {
+    throw new Error('startxref does not point to the cross-reference table.');
+  }
+  const table = pdf
+    .slice(xrefOffset)
+    .match(/^xref\n0 (\d+)\n([\s\S]*?)trailer/);
+  if (!table) throw new Error('Missing fixture cross-reference entries.');
+  const entries = table[2].trimEnd().split('\n');
+  if (entries.length !== Number(table[1])) {
+    throw new Error('Cross-reference entry count does not match.');
+  }
+  for (let objectId = 1; objectId < entries.length; objectId += 1) {
+    const offset = Number(entries[objectId].slice(0, 10));
+    if (!pdf.startsWith(`${objectId} 0 obj\n`, offset)) {
+      throw new Error(
+        `Cross-reference offset for object ${objectId} is invalid.`,
+      );
+    }
+  }
+  const stream = pdf.match(/\/Length (\d+) >>\nstream\n([\s\S]*?)endstream/);
+  if (!stream || Number(stream[1]) !== stream[2].length) {
+    throw new Error('Fixture content stream length does not match its bytes.');
+  }
+} catch (error) {
+  errors.push(`Invalid PDF smoke fixture: ${String(error)}`);
+}
+
 if (errors.length > 0) {
   fail(errors);
 }

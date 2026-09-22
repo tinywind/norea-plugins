@@ -16,6 +16,7 @@
 *.jpg binary
 *.jks binary
 *.keystore binary
+*.pdf binary
 *.png binary
 *.so binary
 *.webp binary
