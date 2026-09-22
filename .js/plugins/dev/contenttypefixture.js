@@ -85,9 +85,9 @@ class ContentTypeFixturePlugin {
                 ] });
         });
     }
-    parseNovelSince(novelPath) {
+    parseNovelSince() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.parseNovel(novelPath);
+            return this.parseNovel();
         });
     }
     getChapterAcquisitionPlan(chapterPath, contentType) {
