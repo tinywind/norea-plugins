@@ -83,8 +83,8 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseNovelSince(novelPath: string): Promise<Plugin.SourceNovel> {
-    return this.parseNovel(novelPath);
+  async parseNovelSince(): Promise<Plugin.SourceNovel> {
+    return this.parseNovel();
   }
 
   getChapterAcquisitionPlan(

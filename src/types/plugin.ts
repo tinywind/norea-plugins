@@ -214,6 +214,7 @@ export namespace Plugin {
       contentType: ChapterContentType,
     ): Promise<ChapterResource>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
+    /** Resolve a source path to an absolute URL; preserve already absolute URLs. */
     resolveUrl?(path: string, isNovel?: boolean): string;
   };
 

@@ -19,6 +19,11 @@ chapters whose `chapterNumber` is greater than or equal to
 list. Chapter numbers are plugin-owned stable ordering keys, must be numeric,
 must be unique within a novel, and must be sorted in reading order.
 
+The optional `resolveUrl(path, isNovel?)` maps a source path to an absolute URL.
+It must preserve already absolute URLs. `isNovel` distinguishes novel links
+from chapter links when a source uses different path prefixes. The host falls
+back to the plugin base URL when this method is absent.
+
 ## Included Samples
 
 | Plugin | Primary content | Reader format | Source | Evidence | Why it is included |
@@ -147,6 +152,10 @@ Run the local verification used by the commit hook:
 ```bash
 npm run verify:commit
 ```
+
+This includes `npm run typecheck` before artifact compilation. Production
+compilation uses `noCheck` to emit standalone plugin files, so successful
+artifact generation alone does not verify TypeScript call contracts.
 
 After `npm run build:full`, verify the generated manifest and compiled plugin JavaScript:
 
