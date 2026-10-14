@@ -4,6 +4,26 @@ Legal-safe sample plugin repository for [Norea](https://github.com/tinywind/nore
 
 This repository starts from the upstream plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
 
+## Repository Workflow
+
+`tinywind/norea-plugins` is the public upstream repository.
+`tinywind/norea-plugins-private` is its private downstream repository. The
+private repository must include every commit from the corresponding public
+source branch before adding private-only commits. The current source branch
+is `v0.2` in both repositories.
+
+1. Commit and push shared plugin contracts, tooling, and public samples here
+   first. If a shared change started in private, adapt only the relevant changes
+   into this repository; keep private plugins and credentials in private.
+2. Fetch and merge the public source branch into the private source branch.
+   Use a merge to preserve the public commit history; cherry-picking selected
+   public commits does not satisfy this rule.
+3. Resolve conflicts, keep private-specific implementations, then commit and
+   push the private result. Add further private-only commits on top.
+
+Never merge the private source branch into this public repository. Publishing
+the `dist/v0.2` artifact branch does not replace merging the source history.
+
 ## Runtime Contract
 
 The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; mirror only the author-facing requirements needed to keep samples compatible.
