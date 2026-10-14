@@ -44,6 +44,14 @@ It must preserve already absolute URLs. `isNovel` distinguishes novel links
 from chapter links when a source uses different path prefixes. The host falls
 back to the plugin base URL when this method is absent.
 
+Page acquisition plans may provide `chapterLinkSelector` for previous/next
+chapter anchors. The host clicks a visible, enabled link only when it matches
+the requested same-origin chapter URL, including source query parameters;
+otherwise it navigates to the requested URL directly. For client-side
+navigation, `documentStartScript` runs in the existing document before the
+click. Plugins opting in must clean up earlier capture hooks and keep old
+chapter content from satisfying `readySelector`.
+
 ## Included Samples
 
 | Plugin | Primary content | Reader format | Source | Evidence | Why it is included |

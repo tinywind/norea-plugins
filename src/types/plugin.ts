@@ -49,6 +49,8 @@ export namespace Plugin {
     excludeSelectors?: string[];
     /** Runs before source page scripts and may prepare a capturable DOM root. */
     documentStartScript?: string;
+    /** Optional previous/next chapter anchors. The host clicks only an exact destination match. */
+    chapterLinkSelector?: string;
     /** Defaults to network-idle. */
     loadStrategy?: ChapterCaptureLoadStrategy;
     /** Add a host-owned query value without discarding existing parameters. */
