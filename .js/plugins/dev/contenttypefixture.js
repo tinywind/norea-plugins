@@ -1,3 +1,28 @@
+const __noreaPluginHelper0 = {};
+(function (exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sourceNovelId = sourceNovelId;
+/** Encodes source-owned identity parts as one portable directory component. */
+function sourceNovelId(...parts) {
+    let novelId = parts
+        .map(part => encodeURIComponent(part).replace(/%[0-9A-F]{2}|[A-Z!'()*]/g, token => token.length === 3
+        ? token
+        : `%${token.charCodeAt(0).toString(16).toUpperCase()}`))
+        .join('+');
+    if (!novelId)
+        throw new Error('The source novel ID must not be empty.');
+    if (/^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(novelId)) {
+        novelId = `%${novelId.charCodeAt(0).toString(16).toUpperCase()}${novelId.slice(1)}`;
+    }
+    novelId = novelId.replace(/^\.|\.$|\.(?=(?:tmp|bak|part|partial|norea-sync-backup)$)/gi, '%2E');
+    if (novelId.length > 240) {
+        throw new Error('The encoded source novel ID must fit within 240 bytes.');
+    }
+    return novelId;
+}
+
+})(__noreaPluginHelper0);
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -9,6 +34,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const novelId_helper_1 = __noreaPluginHelper0;
 const fetch_1 = require("@libs/fetch");
 const pluginInputs_1 = require("@libs/pluginInputs");
 const DEFAULT_BASE_URL = 'http://localhost:3000';
@@ -31,7 +57,7 @@ class ContentTypeFixturePlugin {
         this.apiVersion = '0.2';
         this.id = 'dev-content-type-fixture';
         this.name = 'Dev Content Type Fixture';
-        this.version = '0.1.1';
+        this.version = '0.1.2';
         this.icon = 'siteNotAvailable.png';
         this.pluginInputs = {
             [BASE_URL_INPUT]: {
@@ -63,7 +89,7 @@ class ContentTypeFixturePlugin {
                 text: `${rootUrl}chapters/text/chapter-1.txt`,
                 pdf: `${rootUrl}chapters/pdf/chapter-1.pdf`,
             };
-            return Object.assign(Object.assign({}, this.fixtureNovel()), { author: 'Norea fixture', status: 'Completed', summary: 'Local development fixture for HTML, plain text, and PDF chapter handling.', chapters: [
+            return Object.assign(Object.assign({}, this.fixtureNovel()), { novelId: (0, novelId_helper_1.sourceNovelId)('content-types'), author: 'Norea fixture', status: 'Completed', summary: 'Local development fixture for HTML, plain text, and PDF chapter handling.', chapters: [
                     {
                         name: 'HTML chapter with relative images',
                         path: chapters.html,
