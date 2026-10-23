@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 
@@ -175,7 +176,7 @@ class NdlNextDigitalLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'ndl-next-digital-library';
   name = 'NDL Public Domain Manga';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
 
   getBaseUrl() {
@@ -228,6 +229,7 @@ class NdlNextDigitalLibrary implements Plugin.PluginBase {
     ].filter(Boolean);
 
     return {
+      novelId: sourceNovelId(pid),
       name: book.title,
       path: bookPath(pid),
       cover: images[0],

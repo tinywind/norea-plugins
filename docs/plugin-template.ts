@@ -22,6 +22,7 @@ class TemplatePlugin implements Plugin.PluginBase {
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     return {
+      novelId: 'example',
       name: 'Example Novel',
       path: novelPath,
       chapters: [

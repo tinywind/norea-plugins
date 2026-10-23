@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
 import { inputs } from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
@@ -172,7 +173,7 @@ class PepperCarrot implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'pepper-carrot';
   name = 'Pepper&Carrot';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   pluginInputs = {
     [LANGUAGE_INPUT]: {
@@ -244,6 +245,7 @@ class PepperCarrot implements Plugin.PluginBase {
 
     return {
       ...this.novelItem(language),
+      novelId: sourceNovelId(language),
       author: 'David Revoy',
       artist: 'David Revoy',
       genres: 'Fantasy, Comedy, Webcomic',

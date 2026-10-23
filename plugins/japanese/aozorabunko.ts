@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { readZipText } from '@libs/archive';
 import { parseCsv } from '@libs/csv';
 import { fetchApi } from '@libs/fetch';
@@ -195,7 +196,7 @@ class AozoraBunko implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'aozora-bunko';
   name = 'Aozora Bunko';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -223,6 +224,7 @@ class AozoraBunko implements Plugin.PluginBase {
 
     if (!book) {
       return {
+        novelId: sourceNovelId(id),
         name: 'Unknown Aozora Bunko work',
         path: novelPath,
         status: 'Unknown',
@@ -256,6 +258,7 @@ class AozoraBunko implements Plugin.PluginBase {
     }
 
     return {
+      novelId: sourceNovelId(id),
       name: book.name,
       path: book.path,
       author: book.author,

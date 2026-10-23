@@ -119,6 +119,8 @@ export namespace Plugin {
     cover?: string;
   };
   export type SourceNovel = {
+    /** Stable source-owned ID used as a portable storage directory component. */
+    novelId: string;
     /** Comma separated genre list -> "action,fantasy,romance" */
     genres?: string;
     summary?: string;

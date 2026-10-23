@@ -23,6 +23,10 @@ version; `version` is the source plugin release version.
 Implement `getBaseUrl`, `popularNovels`, `searchNovels`, `parseNovel`,
 `parseNovelSince`, and `getChapterAcquisitionPlan`.
 
+`parseNovel` and `parseNovelSince` must return the same stable, source-owned
+`novelId` for a work. Keep `path` as the source locator. See the portable ID
+requirements in `docs/docs.md`.
+
 Each chapter needs a stable numeric `chapterNumber`, a path, and an optional
 `contentType`. The default content type is `html`.
 

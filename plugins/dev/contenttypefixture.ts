@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
 import { inputs } from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
@@ -24,7 +25,7 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'dev-content-type-fixture';
   name = 'Dev Content Type Fixture';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return fixtureRootUrl();
@@ -56,6 +57,7 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
 
     return {
       ...this.fixtureNovel(),
+      novelId: sourceNovelId('content-types'),
       author: 'Norea fixture',
       status: 'Completed',
       summary:

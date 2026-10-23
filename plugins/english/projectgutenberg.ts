@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { load as parseHTML } from 'cheerio';
 import type { CheerioAPI } from 'cheerio';
 
@@ -83,7 +84,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'project-gutenberg';
   name = 'Project Gutenberg';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -109,6 +110,8 @@ class ProjectGutenberg implements Plugin.PluginBase {
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
+    const bookId = bookIdFromNovelPath(novelPath);
+    const novelId = sourceNovelId(bookId);
     const url = new URL(novelPath, SITE_URL).href;
     const xml = await fetchOpds(url);
     const $ = parseHTML(xml, { xmlMode: true });
@@ -116,6 +119,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
 
     if (!entry) {
       return {
+        novelId,
         name: 'Unknown Project Gutenberg ebook',
         path: novelPath,
         status: 'Unknown',
@@ -124,10 +128,9 @@ class ProjectGutenberg implements Plugin.PluginBase {
     }
 
     const metadata = this.parseEbookMetadata($, entry);
-    const bookId = bookIdFromNovelPath(novelPath);
-
     return {
       ...metadata,
+      novelId,
       path: novelPath,
       status: metadata.status || 'Public domain in the USA',
       chapters: bookId

@@ -16,6 +16,32 @@ Required methods are `getBaseUrl`, `popularNovels`, `searchNovels`,
 Optional fields include filters, plugin inputs, image request headers, custom
 assets, multi-source installation, and `resolveUrl`.
 
+## Novel identity
+
+`parseNovel` and `parseNovelSince` return a required `SourceNovel.novelId`.
+The plugin selects a stable source ID or slug that is unique within its plugin
+ID. Keep it unchanged across metadata refreshes, title changes, pagination,
+and incremental chapter requests. Use a compound ID only when the source needs
+multiple identity parts, such as a repository, ref, and work directory.
+
+`novelId` is one portable directory component of at most 240 UTF-8 bytes. It
+must be nonempty, contain well-formed Unicode, and exclude control characters
+and `<>:"/\\|?*`. It cannot start with a dot or space, end with a dot or space,
+or use a Windows device name such as `CON`, `COM0`, or `LPT9`, including names
+with extensions. The suffixes `.tmp`, `.bak`, `.part`, `.partial`, and
+`.norea-sync-backup` are reserved.
+
+`plugins/novelId.helper.ts` exports `sourceNovelId(...parts)` for reversible
+percent-encoding of source identity parts. Numeric IDs and ordinary slugs stay
+readable; unsafe characters, uppercase letters, and reserved names are encoded
+to prevent collisions on case-insensitive filesystems. Compound parts are separated by `+`; literal plus signs are escaped.
+IDs exceeding the size limit are rejected. The build
+inlines this helper into each published plugin. Do not hash or truncate IDs.
+
+The host stores chapters under `contents/{pluginId}/{novelId}/{chapterNumber}`.
+The source `path` remains the original browsing and parsing locator; it is not
+a storage directory. `NovelItem` search results do not require `novelId`.
+
 ## Chapter plans
 
 `getChapterAcquisitionPlan(chapterPath, contentType)` is synchronous and must

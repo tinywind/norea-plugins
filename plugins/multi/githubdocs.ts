@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { load as parseHTML } from 'cheerio';
 
 import { appFetch } from '@libs/fetch';
@@ -301,7 +302,7 @@ class GitHubDocs implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'github-docs';
   name = 'GitHub Docs';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   installMode = 'multiSource' as const;
 
@@ -334,6 +335,12 @@ class GitHubDocs implements Plugin.PluginBase {
     const chapters = await this.pickChapters(currentPayload, 1);
 
     return {
+      novelId: sourceNovelId(
+        currentPayload.owner.toLowerCase(),
+        currentPayload.repo.toLowerCase(),
+        currentPayload.ref,
+        currentPayload.rootPath,
+      ),
       name: currentPayload.title,
       path: novelPath,
       author: currentPayload.owner,

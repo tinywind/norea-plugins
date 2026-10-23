@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { load as parseHTML } from 'cheerio';
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
@@ -40,7 +41,7 @@ class StandardEbooks implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'standard-ebooks';
   name = 'Standard Ebooks';
-  version = '0.1.1';
+  version = '0.1.2';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE;
@@ -89,6 +90,13 @@ class StandardEbooks implements Plugin.PluginBase {
     });
 
     return {
+      novelId: sourceNovelId(
+        decodeURIComponent(
+          new URL(novelPath, BASE_URL).pathname
+            .replace(/^\/ebooks\//, '')
+            .replace(/\/$/, ''),
+        ),
+      ),
       name: cleanText($('article.ebook h1[property="schema:name"]').text()),
       path: novelPath,
       cover: toAbsoluteUrl(

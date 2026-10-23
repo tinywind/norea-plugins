@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -159,7 +160,7 @@ class KomgaPlugin implements Plugin.PluginBase {
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.4';
+  version = '1.0.5';
 
   getBaseUrl(): string {
     return this.configuredServerUrl() || DISPLAY_SITE;
@@ -359,19 +360,17 @@ class KomgaPlugin implements Plugin.PluginBase {
   }
 
   private async seriesDetail(novelPath: string) {
-    const novel: Plugin.SourceNovel = {
-      path: novelPath,
-      name: 'Untitled',
-      chapters: [],
-    };
-
     const baseUrl = this.serverUrl();
 
     const response = await this.makeRequest(novelPath);
 
     const series = JSON.parse(response) as KomgaSeries;
-
-    novel.name = series.name;
+    const novel: Plugin.SourceNovel = {
+      novelId: sourceNovelId(series.id),
+      path: novelPath,
+      name: series.name,
+      chapters: [],
+    };
     novel.author = (series.booksMetadata.authors ?? [])
       .filter(author => author.role === 'writer' && author.name)
       .map(author => author.name)

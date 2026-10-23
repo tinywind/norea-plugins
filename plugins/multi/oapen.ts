@@ -1,3 +1,4 @@
+import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 
@@ -235,7 +236,7 @@ class OapenLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'oapen';
   name = 'OAPEN Library';
-  version = '0.1.4';
+  version = '0.1.5';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -256,6 +257,9 @@ class OapenLibrary implements Plugin.PluginBase {
 
     if (!item) {
       return {
+        novelId: sourceNovelId(
+          decodeURIComponent(novelPath.replace(/^(?:handle|item|link)\//, '')),
+        ),
         name: 'Unknown OAPEN record',
         path: novelPath,
         status: 'Unknown',
@@ -318,6 +322,9 @@ class OapenLibrary implements Plugin.PluginBase {
         ];
 
     return {
+      novelId: sourceNovelId(
+        item.handle || item.uuid || item.link || novelPath,
+      ),
       name: metadataValue(item, ['dc.title']) || cleanText(item.name),
       path: itemPath(item),
       author: metadataValues(item, [

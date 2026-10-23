@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:start": "node scripts/generate-plugin-index.js && vite",
     "clean:compile": "node scripts/clean-plugin-build.js",
-    "build:compile": "npm run clean:compile && npx tsc --project tsconfig.production.json",
+    "build:compile": "npm run clean:compile && npx tsc --project tsconfig.production.json && node scripts/bundle-plugin-helpers.js",
     "build:manifest": "node ./scripts/build-plugin-manifest.js",
     "build:manifest:dev": "node --env-file=.env ./scripts/build-plugin-manifest.js --include-dev",
     "build:icons": "node scripts/generate-plugin-index.js && npm run build:compile && npm run build:manifest && node ./scripts/download-plugin-icons.js",
@@ -21,6 +21,7 @@
     "lint:fix": "npx eslint . --fix",
     "format": "prettier --write \"./**/*.{js,ts}\"",
     "format:check": "prettier --check \"./**/*.{js,ts}\"",
+    "test:novel-identity": "node --test tests/source-novel-identity.test.mjs tests/bundle-plugin-helpers.test.mjs",
     "typecheck": "tsc --noEmit",
     "verify:commit": "npm run format:check && npm run lint && npm run typecheck && npm run build:compile",
     "verify:plugins": "node scripts/verify-plugin-artifacts.js"
