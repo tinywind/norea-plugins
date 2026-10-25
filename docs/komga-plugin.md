@@ -34,7 +34,7 @@ building invalid URLs.
 
 The canonical app-side contract is maintained in Norea:
 
-<https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md#app-managed-plugin-inputs>
+<https://github.com/tinywind/norea/blob/0.2/docs/plugins/contract.md#app-managed-plugin-inputs>
 
 A compatible host must persist the input keys above for the `komga` plugin
 before calling `popularNovels`, `searchNovels`, `parseNovel`, or

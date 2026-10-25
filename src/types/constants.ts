@@ -9,4 +9,4 @@ export const NovelStatus = {
 } as const;
 
 export const defaultCover =
-  'https://raw.githubusercontent.com/tinywind/norea-plugins/main/public/static/coverNotAvailable.webp';
+  'https://raw.githubusercontent.com/tinywind/norea-plugins/0.2/public/static/coverNotAvailable.webp';

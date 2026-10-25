@@ -10,7 +10,7 @@ This repository starts from the upstream plugin repository shape, but it intenti
 `tinywind/norea-plugins-private` is its private downstream repository. The
 private repository must include every commit from the corresponding public
 source branch before adding private-only commits. The current source branch
-is `v0.2` in both repositories.
+is `0.2` in both repositories.
 
 1. Commit and push shared plugin contracts, tooling, and public samples here
    first. If a shared change started in private, adapt only the relevant changes
@@ -22,11 +22,11 @@ is `v0.2` in both repositories.
    push the private result. Add further private-only commits on top.
 
 Never merge the private source branch into this public repository. Publishing
-the `dist/v0.2` artifact branch does not replace merging the source history.
+the `dist/0.2` artifact branch does not replace merging the source history.
 
 ## Runtime Contract
 
-The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/main/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; mirror only the author-facing requirements needed to keep samples compatible.
+The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/0.2/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; mirror only the author-facing requirements needed to keep samples compatible.
 
 Current source plugins must declare `apiVersion = '0.2' as const`, provide
 `getChapterAcquisitionPlan()`, `parseNovel()`, and
@@ -194,7 +194,7 @@ npm run verify:plugins
 The published manifest is expected at:
 
 ```text
-https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.dist/plugins.min.json
+https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.dist/plugins.min.json
 ```
 
 ## Compatibility
