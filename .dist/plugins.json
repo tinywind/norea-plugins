@@ -4,8 +4,8 @@
 		"name": "Project Gutenberg",
 		"lang": "English",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/english/projectgutenberg.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/english/projectgutenberg.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -13,8 +13,8 @@
 		"name": "Standard Ebooks",
 		"lang": "English",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/english/standardebooks.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/english/standardebooks.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -22,8 +22,8 @@
 		"name": "Aozora Bunko",
 		"lang": "Japanese",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/japanese/aozorabunko.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/japanese/aozorabunko.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -31,8 +31,8 @@
 		"name": "NDL Public Domain Manga",
 		"lang": "Japanese",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/japanese/ndlnextdigitallibrary.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/japanese/ndlnextdigitallibrary.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -40,8 +40,8 @@
 		"name": "GitHub Docs",
 		"lang": "Multi",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/multi/githubdocs.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/multi/githubdocs.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"installMode": "multiSource",
 		"apiVersion": "0.2"
 	},
@@ -50,8 +50,8 @@
 		"name": "Komga",
 		"lang": "Multi",
 		"version": "1.0.5",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/multi/komga.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/src/multi/komga/icon.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/multi/komga.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/src/multi/komga/icon.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -59,8 +59,8 @@
 		"name": "OAPEN Library",
 		"lang": "Multi",
 		"version": "0.1.5",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/multi/oapen.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/multi/oapen.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	},
 	{
@@ -68,8 +68,8 @@
 		"name": "Pepper&Carrot",
 		"lang": "Multi",
 		"version": "0.1.2",
-		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/.js/plugins/multi/peppercarrot.js",
-		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/v0.2/public/static/siteNotAvailable.png",
+		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/multi/peppercarrot.js",
+		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
 	}
 ]
