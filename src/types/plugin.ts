@@ -3,9 +3,7 @@ export namespace Plugin {
   export const API_VERSION = '0.2' as const;
   export type ApiVersion = typeof API_VERSION;
   export type ChapterCaptureLoadStrategy =
-    | 'selector'
-    | 'network-idle'
-    | 'scroll-to-end';
+    'selector' | 'network-idle' | 'scroll-to-end';
   export type ChapterCaptureErrorCode =
     | 'invalid-plan'
     | 'navigation-failed'
@@ -62,17 +60,11 @@ export namespace Plugin {
     type: 'resource';
   };
   export type ChapterAcquisitionPlan =
-    | ChapterPageAcquisitionPlan
-    | ChapterResourceAcquisitionPlan;
+    ChapterPageAcquisitionPlan | ChapterResourceAcquisitionPlan;
   export type ChapterContentType =
-    | 'html'
-    | 'text'
-    | 'markdown'
-    | 'pdf'
-    | 'epub';
+    'html' | 'text' | 'markdown' | 'pdf' | 'epub';
   export type ChapterBinaryMediaType =
-    | 'application/pdf'
-    | 'application/epub+zip';
+    'application/pdf' | 'application/epub+zip';
 
   export type ChapterBinaryResource = {
     type: 'binary';

@@ -91,6 +91,9 @@
     "**/*.{js,ts,jsx,tsx}": "prettier --write"
   },
   "overrides": {
-    "encoding-sniffer": "^1.0.2"
+    "encoding-sniffer": "^1.0.2",
+    "serve": {
+      "compression": "1.8.2"
+    }
   }
 }
