@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Phnom_Penh"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    versioning-strategy: "increase"
+    groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      mui:
+        patterns: ["@mui/*", "@emotion/*"]
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
