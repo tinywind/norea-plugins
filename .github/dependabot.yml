@@ -12,6 +12,10 @@ updates:
       prefix: "chore"
       include: "scope"
     versioning-strategy: "increase"
+    ignore:
+      # typescript-eslint 8.72.1 requires TypeScript <6.1.0; revisit when it supports 7.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0 <8.0.0"]
     groups:
       react:
         patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
