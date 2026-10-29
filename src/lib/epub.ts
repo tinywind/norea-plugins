@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import DOMPurify from 'dompurify';
 
 import type { Plugin } from '@/types/plugin';
 
@@ -25,29 +26,22 @@ type BinaryAttachment = {
 };
 
 function sanitizeHtml(html: string): string {
-  // Remove script tags and their content
-  html = html.replace(
-    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-    '',
+  const template = document.createElement('template');
+  template.content.appendChild(
+    DOMPurify.sanitize(html, {
+      FORBID_TAGS: ['style'],
+      RETURN_DOM_FRAGMENT: true,
+    }),
   );
-
-  // Remove style tags but keep inline styles
-  html = html.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-
-  // Ensure images have proper attributes
-  html = html.replace(/<img([^>]*)>/gi, (match, attrs) => {
-    if (!attrs.includes('alt=')) {
-      return `<img${attrs} alt="">`;
-    }
-    return match;
-  });
-
-  return html;
+  for (const image of template.content.querySelectorAll('img')) {
+    if (!image.hasAttribute('alt')) image.setAttribute('alt', '');
+  }
+  return new window.XMLSerializer().serializeToString(template.content);
 }
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = (Math.random() * 16) | 0;
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] & 0xf;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });

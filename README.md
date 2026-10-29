@@ -4,6 +4,19 @@ Legal-safe sample plugin repository for [Norea](https://github.com/tinywind/nore
 
 This repository starts from the upstream plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
 
+## Local Verification
+
+Use Node.js 22.22.2+, 24.15.0+, or 26+ for the development toolchain. Run
+`npm ci`, `npm run test:novel-identity`, `npm run test:epub`,
+`npm run typecheck`, `npm run lint`, and `npm run build:full`.
+
+EPUB export runs in the browser host. It uses DOMPurify to remove executable
+chapter markup and style elements while keeping inline formatting, and uses
+Web Crypto for UUIDs. The EPUB regression tests inspect real ZIP output in jsdom.
+TypeScript remains on 6 because typescript-eslint 8.72.1 supports versions below
+6.1. Dependabot skips only the incompatible TypeScript 7 series; other updates
+and security checks remain enabled.
+
 ## Repository Workflow
 
 `tinywind/norea-plugins` is the public upstream repository.

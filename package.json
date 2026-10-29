@@ -24,7 +24,8 @@
     "test:novel-identity": "node --test tests/source-novel-identity.test.mjs tests/bundle-plugin-helpers.test.mjs",
     "typecheck": "tsc --noEmit",
     "verify:commit": "npm run format:check && npm run lint && npm run typecheck && npm run build:compile",
-    "verify:plugins": "node scripts/verify-plugin-artifacts.js"
+    "verify:plugins": "node scripts/verify-plugin-artifacts.js",
+    "test:epub": "node --test tests/epub-security.test.mjs"
   },
   "author": "Norea",
   "license": "MIT",
@@ -43,6 +44,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.17",
     "jszip": "^3.10.1",
     "lucide-react": "^1.16.0",
     "sonner": "^2.0.7",
@@ -71,6 +73,7 @@
     "htmlparser2": "^12.0.0",
     "husky": "^9.1.7",
     "image-size": "^2.0.2",
+    "jsdom": "^30.1.3",
     "lint-staged": "^17.0.4",
     "prettier": "^3.8.3",
     "protobufjs": "^8.3.0",
@@ -95,5 +98,8 @@
     "serve": {
       "compression": "1.8.2"
     }
+  },
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   }
 }
