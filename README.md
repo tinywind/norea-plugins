@@ -1,10 +1,10 @@
 # Norea Plugins
 
-Legal-safe sample plugin repository for [Norea](https://github.com/tinywind/norea).
+Sample reading-source plugins and development tools for [Norea](https://github.com/tinywind/norea).
 
 This repository starts from the upstream plugin repository shape, but it intentionally does not import the community source list. Default plugins must either read public-domain/open-license material or user-owned self-hosted libraries.
 
-## Local Verification
+## Local verification
 
 Use Node.js 22.22.2+, 24.15.0+, or 26+ for the development toolchain. Run
 `npm ci`, `npm run test:novel-identity`, `npm run test:epub`,
@@ -17,7 +17,7 @@ TypeScript remains on 6 because typescript-eslint 8.72.1 supports versions below
 6.1. Dependabot skips only the incompatible TypeScript 7 series; other updates
 and security checks remain enabled.
 
-## Repository Workflow
+## Repository workflow
 
 `tinywind/norea-plugins` is the public upstream repository.
 `tinywind/norea-plugins-private` is its private downstream repository. The
@@ -37,7 +37,7 @@ is `0.2` in both repositories.
 Never merge the private source branch into this public repository. Publishing
 the `dist/0.2` artifact branch does not replace merging the source history.
 
-## Runtime Contract
+## Runtime contract
 
 The canonical plugin runtime, sandbox, whitelist, and host capability contract is maintained in [Norea's plugin contract](https://github.com/tinywind/norea/blob/0.2/docs/plugins/contract.md). Keep this repository focused on sample plugins and source policy; mirror only the author-facing requirements needed to keep samples compatible.
 
@@ -65,7 +65,7 @@ navigation, `documentStartScript` runs in the existing document before the
 click. Plugins opting in must clean up earlier capture hooks and keep old
 chapter content from satisfying `readySelector`.
 
-## Included Samples
+## Included samples
 
 | Plugin | Primary content | Reader format | Source | Evidence | Why it is included |
 |---|---|---|---|---|---|
@@ -79,7 +79,7 @@ chapter content from satisfying `readySelector`.
 | GitHub Docs | User-owned documentation | Rendered Markdown/HTML, plain text, PDF, or EPUB | User-provided repository | [GitHub REST API documentation](https://docs.github.com/en/rest) | GitHub Docs is a connector for user-owned repositories. One installed source instance represents one configured work folder and does not ship sample copyrighted content. |
 | Dev Content Type Fixture | Development fixtures | HTML, plain text, and PDF | Local dev server static files | Local fixture content | Development-only smoke fixture for Norea's per-chapter `html`, `text`, and `pdf` content types. It does not contact external sites. |
 
-## GitHub Docs Source
+## GitHub Docs source
 
 `GitHub Docs` is a `multiSource` plugin. The catalog entry is installed through
 Norea's `Add GitHub source` flow, and each installed source instance maps one
@@ -130,7 +130,7 @@ regex:^arc-[0-9]{3}/ch-[0-9]+\.md$
 Use `glob:` when a pattern contains regexp-looking characters but must be
 handled as a glob.
 
-## Source Policy
+## Source policy
 
 - Do not add mirror, aggregator, scan, or scraper sites that republish third-party novels without clear authorization.
 - Do not add copyrighted platform content as a default sample, even when the platform itself is legitimate.
@@ -144,18 +144,24 @@ See [docs/source-policy.md](./docs/source-policy.md) before adding a new source.
 
 ### Environment
 
-Use the same Node.js major version as CI:
+Use Node.js 24.15.0 or newer within the 24.x series for the recommended development
+environment. Other supported Node.js versions are listed under
+[Local verification](#local-verification).
 
 | Tool | Version | Required for |
 | --- | --- | --- |
-| Node.js | 24.x | Development server, TypeScript compilation, manifest generation, verification hooks |
+| Node.js | 24.15.0+ within 24.x | Development server, TypeScript compilation, manifest generation, verification hooks |
 | npm | Bundled with Node.js 24.x | Dependency installation and project scripts |
 
 ```bash
-npm install
+npm ci
+cp .env.template .env
 npm run hooks:install
 npm run dev:start
 ```
+
+The ignored `.env` file sets `USER_CONTENT_BASE`, the base URL written into the
+development manifest. Create it before running `build:manifest:dev`.
 
 The `Dev Content Type Fixture` plugin is available when the local dev server is
 running. Use it from the playground or from a local Norea build pointed at this
@@ -177,6 +183,10 @@ manifest before testing through Norea:
 npm run build:compile
 npm run build:manifest:dev
 ```
+
+Keep the development server running and set Norea's source repository to
+`http://localhost:3000/.dist/plugins.json`. In the Android emulator, use
+`http://10.0.2.2:3000/.dist/plugins.json` and the matching `USER_CONTENT_BASE`.
 
 Existing installed source instances keep the plugin JavaScript that was stored
 when they were installed. Uninstall and reinstall the source instance in Norea
@@ -215,7 +225,7 @@ https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.dist/plugins.
 The 0.2 plugin contract does not guarantee compatibility with 0.1 plugins or
 0.1 hosts.
 
-## Project Layout
+## Project layout
 
 ```text
 plugins/       Plugin implementations
