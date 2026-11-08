@@ -133,6 +133,7 @@ export default tseslint.config(
   {
     ignores: [
       '.js',
+      '.tmp/**', // Local captures and publish worktrees are not source files.
       'docs',
       'proxy_server.js',
       'plugins/*/*\\[*\\]*.ts', // Files with square brackets in their names
