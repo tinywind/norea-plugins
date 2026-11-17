@@ -1,4 +1,5 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
+import { NovelStatus } from '@libs/novelStatus';
 import { load as parseHTML } from 'cheerio';
 import type { CheerioAPI } from 'cheerio';
 
@@ -84,7 +85,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'project-gutenberg';
   name = 'Project Gutenberg';
-  version = '0.1.2';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -122,7 +123,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
         novelId,
         name: 'Unknown Project Gutenberg ebook',
         path: novelPath,
-        status: 'Unknown',
+        status: NovelStatus.Unknown,
         chapters: [],
       };
     }
@@ -132,7 +133,6 @@ class ProjectGutenberg implements Plugin.PluginBase {
       ...metadata,
       novelId,
       path: novelPath,
-      status: metadata.status || 'Public domain in the USA',
       chapters: bookId
         ? [
             {
@@ -260,7 +260,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
       author,
       summary,
       genres: subjects.join(','),
-      status: cleanText(entry.children('rights').first().text()),
+      status: NovelStatus.Completed,
     };
   }
 }
