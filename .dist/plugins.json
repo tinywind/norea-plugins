@@ -3,7 +3,7 @@
 		"id": "project-gutenberg",
 		"name": "Project Gutenberg",
 		"lang": "English",
-		"version": "0.1.2",
+		"version": "0.1.3",
 		"url": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/.js/plugins/english/projectgutenberg.js",
 		"iconUrl": "https://raw.githubusercontent.com/tinywind/norea-plugins/dist/0.2/public/static/siteNotAvailable.png",
 		"apiVersion": "0.2"
