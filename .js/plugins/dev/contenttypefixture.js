@@ -36,6 +36,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const novelId_helper_1 = __noreaPluginHelper0;
 const fetch_1 = require("@libs/fetch");
+const novelStatus_1 = require("@libs/novelStatus");
 const pluginInputs_1 = require("@libs/pluginInputs");
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 const FIXTURE_PATH = 'static/fixtures/content-types/';
@@ -57,16 +58,18 @@ class ContentTypeFixturePlugin {
         this.apiVersion = '0.2';
         this.id = 'dev-content-type-fixture';
         this.name = 'Dev Content Type Fixture';
-        this.version = '0.1.2';
+        this.version = '0.1.3';
         this.icon = 'siteNotAvailable.png';
         this.pluginInputs = {
             [BASE_URL_INPUT]: {
                 label: 'Fixture server base URL',
                 value: DEFAULT_BASE_URL,
+                type: pluginInputs_1.PluginInputTypes.Url,
                 placeholder: 'http://localhost:3000',
                 required: true,
             },
         };
+        this.pluginSettings = this.pluginInputs;
     }
     getBaseUrl() {
         return fixtureRootUrl();
@@ -89,7 +92,7 @@ class ContentTypeFixturePlugin {
                 text: `${rootUrl}chapters/text/chapter-1.txt`,
                 pdf: `${rootUrl}chapters/pdf/chapter-1.pdf`,
             };
-            return Object.assign(Object.assign({}, this.fixtureNovel()), { novelId: (0, novelId_helper_1.sourceNovelId)('content-types'), author: 'Norea fixture', status: 'Completed', summary: 'Local development fixture for HTML, plain text, and PDF chapter handling.', chapters: [
+            return Object.assign(Object.assign({}, this.fixtureNovel()), { novelId: (0, novelId_helper_1.sourceNovelId)('content-types'), author: 'Norea fixture', status: novelStatus_1.NovelStatus.Completed, summary: 'Local development fixture for HTML, plain text, and PDF chapter handling.', chapters: [
                     {
                         name: 'HTML chapter with relative images',
                         path: chapters.html,
