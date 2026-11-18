@@ -1,5 +1,14 @@
 import { storage } from '../lib/storage';
 
+export {
+  PluginInputTypes,
+  PluginInstallModes,
+  isPluginInputType,
+  isPluginInstallMode,
+  type PluginInputType,
+  type PluginInstallMode,
+} from '../types/constants';
+
 type PluginInputValues = Record<string, string>;
 
 function asString(value: unknown): string | null {

@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'vite';
 import { sourceNovelId } from '../plugins/novelId.helper.ts';
+import { NovelStatus } from '../src/types/constants.ts';
+
+const VALID_NOVEL_STATUSES = new Set(Object.values(NovelStatus));
 
 async function withPlugin(path, run) {
   const server = await createServer({
@@ -21,6 +24,12 @@ async function withPlugin(path, run) {
 
 function assertNovelIdentity(novel, expectedId) {
   assert.equal(novel.novelId, expectedId);
+  if (novel.path !== undefined) {
+    assert.ok(
+      VALID_NOVEL_STATUSES.has(novel.status),
+      `Expected canonical NovelStatus, got ${JSON.stringify(novel.status)}`,
+    );
+  }
   assert.ok(novel.novelId.length <= 240);
   assert.doesNotMatch(novel.novelId, /[<>:"/\\|?*]/);
   assert.ok(

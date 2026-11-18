@@ -1,5 +1,6 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 
 const SITE_URL = 'https://lab.ndl.go.jp/dl/';
@@ -176,7 +177,7 @@ class NdlNextDigitalLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'ndl-next-digital-library';
   name = 'NDL Public Domain Manga';
-  version = '0.1.2';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
 
   getBaseUrl() {
@@ -236,7 +237,7 @@ class NdlNextDigitalLibrary implements Plugin.PluginBase {
       author: book.responsibility,
       genres: 'Manga, Public domain',
       summary: description.join('\n'),
-      status: 'Completed',
+      status: NovelStatus.Completed,
       chapters: [
         {
           name: 'Full book',

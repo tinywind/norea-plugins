@@ -2,6 +2,7 @@ import { sourceNovelId } from '@plugins/novelId.helper';
 import { readZipText } from '@libs/archive';
 import { parseCsv } from '@libs/csv';
 import { fetchApi } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 
 const SITE_URL = 'https://www.aozora.gr.jp/';
@@ -196,7 +197,7 @@ class AozoraBunko implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'aozora-bunko';
   name = 'Aozora Bunko';
-  version = '0.1.2';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -227,7 +228,7 @@ class AozoraBunko implements Plugin.PluginBase {
         novelId: sourceNovelId(id),
         name: 'Unknown Aozora Bunko work',
         path: novelPath,
-        status: 'Unknown',
+        status: NovelStatus.Unknown,
         chapters: [],
       };
     }
@@ -264,7 +265,7 @@ class AozoraBunko implements Plugin.PluginBase {
       author: book.author,
       genres: book.genres,
       summary: book.summary,
-      status: 'Completed',
+      status: NovelStatus.Completed,
       chapters,
     };
   }

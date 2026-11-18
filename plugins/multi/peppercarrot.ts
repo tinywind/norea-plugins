@@ -1,6 +1,7 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
-import { inputs } from '@libs/pluginInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import { inputs, PluginInputTypes } from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
 
 const SITE_URL = 'https://www.peppercarrot.com/';
@@ -173,13 +174,13 @@ class PepperCarrot implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'pepper-carrot';
   name = 'Pepper&Carrot';
-  version = '0.1.2';
+  version = '0.1.4';
   icon = 'siteNotAvailable.png';
   pluginInputs = {
     [LANGUAGE_INPUT]: {
       value: DEFAULT_LANGUAGE,
       label: 'Language code',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'en, kr, ja',
       required: true,
     },
@@ -251,7 +252,7 @@ class PepperCarrot implements Plugin.PluginBase {
       genres: 'Fantasy, Comedy, Webcomic',
       summary:
         "Official Pepper&Carrot comic pages licensed under CC BY 4.0. Translation and contributor credits are included on each episode's final page.",
-      status: 'Ongoing',
+      status: NovelStatus.Ongoing,
       chapters,
     };
   }

@@ -5,7 +5,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 import { load as parseHTML } from 'cheerio';
 import { storage } from '@libs/storage';
-import { inputs } from '@libs/pluginInputs';
+import { inputs, PluginInputTypes } from '@libs/pluginInputs';
 
 const DISPLAY_SITE = 'https://komga.org/';
 const URL_SETTING_KEY = 'url';
@@ -160,7 +160,7 @@ class KomgaPlugin implements Plugin.PluginBase {
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.5';
+  version = '1.0.6';
 
   getBaseUrl(): string {
     return this.configuredServerUrl() || DISPLAY_SITE;
@@ -369,6 +369,7 @@ class KomgaPlugin implements Plugin.PluginBase {
       novelId: sourceNovelId(series.id),
       path: novelPath,
       name: series.name,
+      status: NovelStatus.Unknown,
       chapters: [],
     };
     novel.author = (series.booksMetadata.authors ?? [])
@@ -590,22 +591,22 @@ class KomgaPlugin implements Plugin.PluginBase {
     url: {
       value: '',
       label: 'Server URL',
-      type: 'Url',
+      type: PluginInputTypes.Url,
       placeholder: 'https://komga.example.com/',
       required: true,
     },
     email: {
       value: '',
       label: 'Email',
-      type: 'Text',
+      type: PluginInputTypes.Text,
     },
     password: {
       value: '',
       label: 'Password',
-      type: 'Password',
+      type: PluginInputTypes.Password,
       private: true,
     },
-  };
+  } satisfies Plugin.PluginInputSchema;
 
   pluginSettings = this.pluginInputs;
 }

@@ -3,6 +3,11 @@ import fs from 'fs';
 import languages from './languages.js';
 import { execSync } from 'child_process';
 import { minify } from './terser.js';
+import {
+  assertValidCompiledPluginContract,
+  createHostModuleResolver,
+  hasDisallowedInternalRequire,
+} from './plugin-contract-validation.js';
 
 const REMOTE = execSync('git remote get-url origin')
   .toString()
@@ -89,7 +94,7 @@ const createRecursiveProxy = () => {
 
 const proxy = createRecursiveProxy();
 
-const _require = () => proxy;
+const _require = createHostModuleResolver(() => proxy);
 
 const COMPILED_PLUGIN_DIR = './.js/plugins';
 
@@ -132,12 +137,22 @@ for (let language in manifestLanguages) {
       installMode,
       apiVersion,
     } = instance;
+    const sourceLabel = `${language.toLowerCase()}/${plugin}`;
+    if (hasDisallowedInternalRequire(rawCode)) {
+      throw new Error(
+        `Compiled plugin ${sourceLabel} retains unwhitelisted '@/' require().`,
+      );
+    }
     const normalisedName = name.replace(/\[.*\]/, '');
     if (apiVersion !== PLUGIN_API_VERSION) {
       throw new Error(
         `Plugin ${id || plugin} must declare apiVersion ${PLUGIN_API_VERSION}`,
       );
     }
+    assertValidCompiledPluginContract(
+      instance,
+      `${id || plugin} (${sourceLabel})`,
+    );
 
     // --only-new logic
     if (

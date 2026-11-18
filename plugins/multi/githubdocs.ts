@@ -2,7 +2,12 @@ import { sourceNovelId } from '@plugins/novelId.helper';
 import { load as parseHTML } from 'cheerio';
 
 import { appFetch } from '@libs/fetch';
-import { inputs } from '@libs/pluginInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import {
+  inputs,
+  PluginInputTypes,
+  PluginInstallModes,
+} from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
 
 const API_URL = 'https://api.github.com';
@@ -302,9 +307,9 @@ class GitHubDocs implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'github-docs';
   name = 'GitHub Docs';
-  version = '0.1.2';
+  version = '0.1.4';
   icon = 'siteNotAvailable.png';
-  installMode = 'multiSource' as const;
+  installMode = PluginInstallModes.MultiSource;
 
   getBaseUrl(): string {
     return SITE_URL;
@@ -348,7 +353,7 @@ class GitHubDocs implements Plugin.PluginBase {
       summary: `${currentPayload.owner}/${currentPayload.repo}:${
         currentPayload.rootPath || '/'
       }`,
-      status: 'Completed',
+      status: NovelStatus.Completed,
       chapters,
     };
   }
@@ -935,50 +940,50 @@ class GitHubDocs implements Plugin.PluginBase {
     repository: {
       value: '',
       label: 'Repository',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'owner/repo',
       required: true,
     },
     ref: {
       value: '',
       label: 'Ref',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'main',
     },
     workTitle: {
       value: '',
       label: 'Work title',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'My novel',
       required: true,
     },
     workRoot: {
       label: 'Work folder',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'works/my-novel/manuscripts',
       required: true,
     },
     chapterFilePattern: {
       label: 'Chapter files',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'regex:^arc-[0-9]{3}/ch-[0-9]+\\.md$',
       required: true,
     },
     chapterExcludePattern: {
       value: '',
       label: 'Exclude files',
-      type: 'Text',
+      type: PluginInputTypes.Text,
       placeholder: 'README.md,draft-*,regex:^legacy/',
     },
     token: {
       value: '',
       label: 'GitHub token',
-      type: 'Password',
+      type: PluginInputTypes.Password,
       private: true,
     },
     maxBinaryMb: {
       label: 'Max binary MB',
-      type: 'Number',
+      type: PluginInputTypes.Number,
       placeholder: DEFAULT_MAX_BINARY_MB.toString(),
     },
   } satisfies Plugin.PluginInputSchema;

@@ -1,18 +1,24 @@
 import { FilterToValues, Filters } from '@libs/filterInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import type {
+  ChapterBinaryMediaType as ConstantChapterBinaryMediaType,
+  ChapterCaptureErrorCode as ConstantChapterCaptureErrorCode,
+  ChapterCaptureLoadStrategy as ConstantChapterCaptureLoadStrategy,
+  ChapterContentType as ConstantChapterContentType,
+  PluginInputType as ConstantPluginInputType,
+  PluginInstallMode as ConstantPluginInstallMode,
+  SourceAccessChallengeKind as ConstantSourceAccessChallengeKind,
+  SourceAccessErrorCode as ConstantSourceAccessErrorCode,
+} from './constants';
+
 export namespace Plugin {
   export const API_VERSION = '0.2' as const;
   export type ApiVersion = typeof API_VERSION;
-  export type ChapterCaptureLoadStrategy =
-    'selector' | 'network-idle' | 'scroll-to-end';
-  export type ChapterCaptureErrorCode =
-    | 'invalid-plan'
-    | 'navigation-failed'
-    | 'manual-action-required'
-    | 'timeout'
-    | 'content-not-found'
-    | 'capture-failed'
-    | 'cancelled';
-  export type SourceAccessChallengeKind = 'captcha' | 'cloudflare';
+  export type NovelStatusValue = NovelStatus;
+  export type ChapterCaptureLoadStrategy = ConstantChapterCaptureLoadStrategy;
+  export type ChapterCaptureErrorCode = ConstantChapterCaptureErrorCode;
+  export type SourceAccessChallengeKind = ConstantSourceAccessChallengeKind;
+  export type SourceAccessErrorCode = ConstantSourceAccessErrorCode;
   export type SourceAccessChallenge = {
     kind: SourceAccessChallengeKind;
     /** Absolute HTTP(S) URL where the challenge was observed. */
@@ -35,6 +41,26 @@ export namespace Plugin {
     ChapterContentType,
     'html' | 'text' | 'markdown'
   >;
+  type WebViewInteractionBase = {
+    /** First matching element is the interaction target. */
+    selector: string;
+    /** Skips the step instead of failing when the target never appears. */
+    optional?: boolean;
+    /** Host-clamped wait for the target to appear. Defaults to 10 seconds. */
+    timeoutMs?: number;
+  };
+  export type WebViewInteraction =
+    | ({ type: 'click' } & WebViewInteractionBase)
+    | ({
+        type: 'type';
+        text: string;
+        /** Empties the field before typing. */
+        clear?: boolean;
+        /** Presses Enter and submits the owning form after typing. */
+        submit?: boolean;
+      } & WebViewInteractionBase)
+    | ({ type: 'select'; value: string } & WebViewInteractionBase)
+    | ({ type: 'waitFor' } & WebViewInteractionBase);
   export type ChapterPageAcquisitionPlan = {
     type: 'page';
     /** Absolute HTTP(S) URL. Preserve required query parameters. */
@@ -49,6 +75,8 @@ export namespace Plugin {
     documentStartScript?: string;
     /** Optional previous/next chapter anchors. The host clicks only an exact destination match. */
     chapterLinkSelector?: string;
+    /** User-like DOM steps performed after the document is ready and before capture. */
+    interactions?: WebViewInteraction[];
     /** Defaults to network-idle. */
     loadStrategy?: ChapterCaptureLoadStrategy;
     /** Add a host-owned query value without discarding existing parameters. */
@@ -61,10 +89,8 @@ export namespace Plugin {
   };
   export type ChapterAcquisitionPlan =
     ChapterPageAcquisitionPlan | ChapterResourceAcquisitionPlan;
-  export type ChapterContentType =
-    'html' | 'text' | 'markdown' | 'pdf' | 'epub';
-  export type ChapterBinaryMediaType =
-    'application/pdf' | 'application/epub+zip';
+  export type ChapterContentType = ConstantChapterContentType;
+  export type ChapterBinaryMediaType = ConstantChapterBinaryMediaType;
 
   export type ChapterBinaryResource = {
     type: 'binary';
@@ -118,7 +144,7 @@ export namespace Plugin {
     summary?: string;
     author?: string;
     artist?: string;
-    status?: string;
+    status: NovelStatus;
     /** Rating out of 5 as float */
     rating?: number;
     chapters: ChapterItem[];
@@ -134,7 +160,8 @@ export namespace Plugin {
     showLatestNovels?: boolean;
     filters: Q extends undefined ? undefined : FilterToValues<Q>;
   };
-  export type InstallMode = 'single' | 'multiSource';
+  export type InstallMode = ConstantPluginInstallMode;
+  export type PluginInputType = ConstantPluginInputType;
   export type PluginItem = {
     id: string;
     name: string;
@@ -154,15 +181,37 @@ export namespace Plugin {
     label: string;
     value: string;
   };
-  export type PluginInputDefinition = {
-    value?: PluginInputValue;
+  export type SwitchPluginInputDefinition = {
+    type: 'Switch';
+    value?: boolean;
     label?: string;
-    type?: string;
     placeholder?: string;
     required?: boolean;
     private?: boolean;
-    options?: PluginInputOption[];
+    options?: never;
   };
+  export type SelectPluginInputDefinition = {
+    type: 'Select';
+    value?: string;
+    label?: string;
+    placeholder?: string;
+    required?: boolean;
+    private?: boolean;
+    options: readonly PluginInputOption[];
+  };
+  export type TextualPluginInputDefinition = {
+    type?: Exclude<PluginInputType, 'Switch' | 'Select'>;
+    value?: string;
+    label?: string;
+    placeholder?: string;
+    required?: boolean;
+    private?: boolean;
+    options?: readonly PluginInputOption[];
+  };
+  export type PluginInputDefinition =
+    | SwitchPluginInputDefinition
+    | SelectPluginInputDefinition
+    | TextualPluginInputDefinition;
   export type PluginInputSchema = Record<string, PluginInputDefinition>;
 
   export type PluginBase = {
@@ -182,7 +231,7 @@ export namespace Plugin {
     filters?: Filters;
     installMode?: InstallMode;
     pluginInputs?: PluginInputSchema;
-    pluginSettings?: PluginInputSchema | Record<string, unknown>;
+    pluginSettings?: PluginInputSchema;
     version: string;
     getBaseUrl(): string;
     popularNovels(

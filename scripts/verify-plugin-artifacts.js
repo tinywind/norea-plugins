@@ -2,6 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import languages from './languages.js';
+import { isPluginInstallMode } from '../src/types/constants.ts';
+import {
+  collectCompiledPluginContractErrors,
+  createHostModuleResolver,
+  hasDisallowedInternalRequire,
+} from './plugin-contract-validation.js';
 
 const DIST_DIR = '.dist';
 const COMPILED_PLUGIN_DIR = path.join('.js', 'plugins');
@@ -111,7 +117,7 @@ function evaluateCompiledPlugin(compiledPath, resolveRequire) {
     `const exports = module.exports = {};
     ${source};
     return exports.default`,
-  )(resolveRequire ?? (() => createRecursiveProxy()), {});
+  )(createHostModuleResolver(createRecursiveProxy, resolveRequire), {});
 }
 
 async function capturedChapterImageSources(documentStartScript) {
@@ -361,9 +367,45 @@ for (const plugin of expected) {
     continue;
   }
 
+  if (
+    manifestEntry.installMode !== undefined &&
+    !isPluginInstallMode(manifestEntry.installMode)
+  ) {
+    errors.push(
+      `${manifestEntry.id} has unsupported installMode '${String(manifestEntry.installMode)}'.`,
+    );
+  }
+
   if (manifestEntry.lang !== plugin.language) {
     errors.push(
       `${manifestEntry.id} has lang '${manifestEntry.lang}', expected '${plugin.language}'.`,
+    );
+  }
+
+  const compiledSource = fs.readFileSync(plugin.compiledPath, 'utf-8');
+  if (hasDisallowedInternalRequire(compiledSource)) {
+    errors.push(
+      `${plugin.compiledRelativePath} retains unwhitelisted '@/' require().`,
+    );
+  }
+  try {
+    const compiledPlugin = evaluateCompiledPlugin(plugin.compiledPath);
+    errors.push(
+      ...collectCompiledPluginContractErrors(
+        compiledPlugin,
+        plugin.compiledRelativePath,
+      ),
+    );
+    if (
+      (compiledPlugin.installMode ?? undefined) !== manifestEntry.installMode
+    ) {
+      errors.push(
+        `${plugin.compiledRelativePath} installMode mismatch between compiled plugin and manifest.`,
+      );
+    }
+  } catch (error) {
+    errors.push(
+      `${plugin.compiledRelativePath} failed contract evaluation: ${String(error)}`,
     );
   }
 }

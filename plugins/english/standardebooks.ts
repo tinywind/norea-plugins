@@ -1,6 +1,7 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
 import { load as parseHTML } from 'cheerio';
 import { fetchApi } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://standardebooks.org/';
@@ -41,7 +42,7 @@ class StandardEbooks implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'standard-ebooks';
   name = 'Standard Ebooks';
-  version = '0.1.2';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE;
@@ -117,7 +118,7 @@ class StandardEbooks implements Plugin.PluginBase {
           $('meta[name="description"]').attr('content') ||
           '',
       ),
-      status: 'Completed',
+      status: NovelStatus.Completed,
       chapters,
     };
   }

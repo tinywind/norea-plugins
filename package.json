@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit",
     "verify:commit": "npm run format:check && npm run lint && npm run typecheck && npm run build:compile",
     "verify:plugins": "node scripts/verify-plugin-artifacts.js",
+    "test:contract": "node --test tests/plugin-contract-validation.test.mjs",
     "test:epub": "node --test tests/epub-security.test.mjs"
   },
   "author": "Norea",

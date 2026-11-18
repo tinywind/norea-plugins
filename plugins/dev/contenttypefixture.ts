@@ -1,6 +1,7 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
-import { inputs } from '@libs/pluginInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import { inputs, PluginInputTypes } from '@libs/pluginInputs';
 import { Plugin } from '@/types/plugin';
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
@@ -25,7 +26,7 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'dev-content-type-fixture';
   name = 'Dev Content Type Fixture';
-  version = '0.1.2';
+  version = '0.1.3';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return fixtureRootUrl();
@@ -34,10 +35,12 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
     [BASE_URL_INPUT]: {
       label: 'Fixture server base URL',
       value: DEFAULT_BASE_URL,
+      type: PluginInputTypes.Url,
       placeholder: 'http://localhost:3000',
       required: true,
     },
-  };
+  } satisfies Plugin.PluginInputSchema;
+  pluginSettings = this.pluginInputs;
 
   async popularNovels(): Promise<Plugin.NovelItem[]> {
     return [this.fixtureNovel()];
@@ -59,7 +62,7 @@ class ContentTypeFixturePlugin implements Plugin.PluginBase {
       ...this.fixtureNovel(),
       novelId: sourceNovelId('content-types'),
       author: 'Norea fixture',
-      status: 'Completed',
+      status: NovelStatus.Completed,
       summary:
         'Local development fixture for HTML, plain text, and PDF chapter handling.',
       chapters: [

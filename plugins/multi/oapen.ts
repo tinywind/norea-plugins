@@ -1,5 +1,6 @@
 import { sourceNovelId } from '@plugins/novelId.helper';
 import { fetchApi } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 
 const SITE_URL = 'https://library.oapen.org/';
@@ -236,7 +237,7 @@ class OapenLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'oapen';
   name = 'OAPEN Library';
-  version = '0.1.5';
+  version = '0.1.6';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -262,7 +263,7 @@ class OapenLibrary implements Plugin.PluginBase {
         ),
         name: 'Unknown OAPEN record',
         path: novelPath,
-        status: 'Unknown',
+        status: NovelStatus.Unknown,
         chapters: [],
       };
     }
@@ -339,7 +340,7 @@ class OapenLibrary implements Plugin.PluginBase {
       summary: [abstract, license ? `License: ${license}` : '']
         .filter(Boolean)
         .join('\n\n'),
-      status: 'Completed',
+      status: NovelStatus.Completed,
       chapters,
     };
   }

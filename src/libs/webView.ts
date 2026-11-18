@@ -1,5 +1,26 @@
+import type { Plugin } from '../types/plugin';
+
+export {
+  ChapterCaptureLoadStrategies,
+  ChapterCaptureErrorCodes,
+  SourceAccessChallengeKinds,
+  SourceAccessErrorCodes,
+  WebViewInteractionTypes,
+  type ChapterCaptureLoadStrategy,
+  type ChapterCaptureErrorCode,
+  type SourceAccessChallengeKind,
+  type SourceAccessErrorCode,
+  type WebViewInteractionType,
+} from '../types/constants';
+
+export type WebViewInteraction = Plugin.WebViewInteraction;
+
 export type WebViewFetchOptions = {
   beforeContentScript?: string;
+  chapterLinkSelector?: string;
+  afterContentScript?: string;
+  interactions?: WebViewInteraction[];
+  contentSelector?: string;
   userAgent?: string;
   timeoutMs?: number;
 };
