@@ -1,0 +1,155 @@
+name: Validate and publish plugins
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - "dist/**"
+      - "plugins/**"
+      - "**/plugins/**"
+      - "dependabot/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+
+jobs:
+  validate:
+    name: Validate plugins and artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      publish_requested: ${{ steps.publication.outputs.publish }}
+    steps:
+      - name: Check out the exact source commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Select release-branch publication
+        id: publication
+        if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/heads/') && !startsWith(github.ref, 'refs/heads/dependabot/')
+        env:
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          if [[ "$SOURCE_BRANCH" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo "Validation only: $SOURCE_BRANCH is not a version branch such as 0.2." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify generated plugin index
+        run: |
+          node scripts/generate-plugin-index.js
+          git diff --exit-code -- plugins/index.ts
+
+      - name: Run formatting, lint, typecheck, and compile checks
+        run: npm run verify:commit
+
+      - name: Run plugin and EPUB tests
+        run: |
+          npm run test:novel-identity
+          npm run test:epub
+          npm run test:contract
+
+      - name: Verify manifest and compiled plugin artifacts
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          target_branch="${BASE_REF:-$REF_NAME}"
+          verification_branch="dist/${target_branch#dist/}"
+          rm -rf .dist .js total.svg
+          npm run build:compile
+          BRANCH="$verification_branch" npm run build:manifest
+          BRANCH="$verification_branch" npm run verify:plugins
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --exit-code
+          git diff --cached --exit-code
+
+  publish:
+    name: Publish dist branch
+    needs: validate
+    if: needs.validate.outputs.publish_requested == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-dist-${{ github.ref_name }}
+      cancel-in-progress: false
+    env:
+      SOURCE_BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Skip an outdated branch commit
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SOURCE_BRANCH" --jq '.object.sha')"
+          if [[ "$head" == "$GITHUB_SHA" ]]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo "Publication skipped: branch $SOURCE_BRANCH has advanced beyond $GITHUB_SHA." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check out the exact source commit
+        if: steps.current.outputs.publish == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+
+      - name: Set up Node.js
+        if: steps.current.outputs.publish == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install locked dependencies
+        if: steps.current.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Publish compiled artifacts to dist/<branch>
+        if: steps.current.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SOURCE_BRANCH" --jq '.object.sha')"
+          if [[ "$head" != "$GITHUB_SHA" ]]; then
+            echo "Publication skipped: branch $SOURCE_BRANCH advanced while preparing artifacts." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          unset GH_TOKEN
+          export GIT_AUTHOR_NAME="github-actions[bot]"
+          export GIT_AUTHOR_EMAIL="41898282+github-actions[bot]@users.noreply.github.com"
+          export GIT_COMMITTER_NAME="github-actions[bot]"
+          export GIT_COMMITTER_EMAIL="41898282+github-actions[bot]@users.noreply.github.com"
+          ./scripts/publish-plugins.sh origin "$SOURCE_BRANCH"
+          dist_sha="$(git ls-remote origin "refs/heads/dist/$SOURCE_BRANCH" | cut -f1)"
+          {
+            echo "## Published plugin artifacts"
+            echo "- Source commit: $GITHUB_SHA"
+            echo "- Source branch: $SOURCE_BRANCH"
+            echo "- Artifact branch: dist/$SOURCE_BRANCH"
+            echo "- Artifact commit: $dist_sha"
+          } >> "$GITHUB_STEP_SUMMARY"

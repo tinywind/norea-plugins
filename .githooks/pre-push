@@ -5,8 +5,6 @@ cd "$(git rev-parse --show-toplevel)"
 
 echo "Running pre-push checks..."
 
-remote=${1:-origin}
-publish_branches=""
 current_branch=$(git branch --show-current)
 artifact_push_only=true
 saw_branch_push=false
@@ -19,7 +17,6 @@ while read -r local_ref _local_sha remote_ref _remote_sha; do
       dist/*|plugins/*|*/plugins/*) ;;
       *)
         artifact_push_only=false
-        publish_branches="$publish_branches $pushed_branch"
         ;;
     esac
   elif [ "$local_ref" = "HEAD" ] && [ -n "$current_branch" ]; then
@@ -27,7 +24,6 @@ while read -r local_ref _local_sha remote_ref _remote_sha; do
       dist/*|plugins/*|*/plugins/*) ;;
       *)
         artifact_push_only=false
-        publish_branches="$publish_branches $current_branch"
         ;;
     esac
   fi
@@ -60,7 +56,3 @@ fi
 verification_branch="dist/$current_branch"
 BRANCH="$verification_branch" npm run build:manifest
 BRANCH="$verification_branch" npm run verify:plugins
-
-for publish_branch in $publish_branches; do
-  ./scripts/publish-plugins.sh "$remote" "$publish_branch"
-done

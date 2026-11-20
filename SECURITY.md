@@ -47,8 +47,8 @@ Issues in Norea Plugins (`tinywind/norea-plugins`), including:
   [Norea plugin contract](https://github.com/tinywind/norea/blob/0.2/docs/plugins/contract.md)).
 - Shared plugin helpers and browser-side EPUB export sanitization (DOMPurify
   filtering, XHTML serialization, attachment handling, and UUID generation).
-- Build, manifest generation, artifact verification, and publishing scripts
-  under `scripts/`.
+- Build, manifest generation, artifact verification, and publishing workflows
+  under `scripts/` and `.github/workflows/`.
 - Dependency vulnerabilities affecting shipped plugin artifacts or the
   supported development toolchain.
 

@@ -214,6 +214,12 @@ After `npm run build:full`, verify the generated manifest and compiled plugin Ja
 npm run verify:plugins
 ```
 
+`.githooks/pre-push` runs local compilation and artifact verification only.
+Pushing version branch `0.2` triggers
+[`.github/workflows/publish-plugins.yml`](./.github/workflows/publish-plugins.yml),
+which validates the exact commit and publishes compiled artifacts and manifests
+to `dist/0.2`.
+
 The published manifest is expected at:
 
 ```text
