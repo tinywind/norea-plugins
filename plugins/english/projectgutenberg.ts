@@ -85,7 +85,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'project-gutenberg';
   name = 'Project Gutenberg';
-  version = '0.1.3';
+  version = '0.1.4';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -123,7 +123,7 @@ class ProjectGutenberg implements Plugin.PluginBase {
         novelId,
         name: 'Unknown Project Gutenberg ebook',
         path: novelPath,
-        status: NovelStatus.Unknown,
+        status: NovelStatus.Ongoing,
         chapters: [],
       };
     }

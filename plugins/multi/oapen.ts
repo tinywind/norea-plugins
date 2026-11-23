@@ -237,7 +237,7 @@ class OapenLibrary implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'oapen';
   name = 'OAPEN Library';
-  version = '0.1.6';
+  version = '0.1.7';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -263,7 +263,7 @@ class OapenLibrary implements Plugin.PluginBase {
         ),
         name: 'Unknown OAPEN record',
         path: novelPath,
-        status: NovelStatus.Unknown,
+        status: NovelStatus.Ongoing,
         chapters: [],
       };
     }

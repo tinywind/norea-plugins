@@ -197,7 +197,7 @@ class AozoraBunko implements Plugin.PluginBase {
   apiVersion = '0.2' as const;
   id = 'aozora-bunko';
   name = 'Aozora Bunko';
-  version = '0.1.3';
+  version = '0.1.4';
   icon = 'siteNotAvailable.png';
   getBaseUrl(): string {
     return SITE_URL;
@@ -228,7 +228,7 @@ class AozoraBunko implements Plugin.PluginBase {
         novelId: sourceNovelId(id),
         name: 'Unknown Aozora Bunko work',
         path: novelPath,
-        status: NovelStatus.Unknown,
+        status: NovelStatus.Ongoing,
         chapters: [],
       };
     }

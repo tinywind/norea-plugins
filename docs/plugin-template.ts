@@ -1,4 +1,5 @@
 import { fetchApi } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 
 class TemplatePlugin implements Plugin.PluginBase {
@@ -25,6 +26,7 @@ class TemplatePlugin implements Plugin.PluginBase {
       novelId: 'example',
       name: 'Example Novel',
       path: novelPath,
+      status: NovelStatus.Ongoing,
       chapters: [
         {
           name: 'Chapter 1',

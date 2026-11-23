@@ -22,21 +22,30 @@ import {
 import {
   FilterTypes,
   collectCompiledPluginContractErrors,
+  createHostModuleResolver,
   hasDisallowedInternalRequire,
 } from '../scripts/plugin-contract-validation.js';
 
 test('canonical contract constants and guards cover all host contract values', () => {
   assert.deepEqual(Object.values(NovelStatus), [
-    'Unknown',
     'Ongoing',
     'Completed',
-    'Licensed',
-    'Publishing Finished',
     'Cancelled',
     'On Hiatus',
   ]);
-  assert.equal(isNovelStatus(NovelStatus.Ongoing), true);
+  for (const status of Object.values(NovelStatus)) {
+    assert.equal(isNovelStatus(status), true);
+  }
   assert.equal(isNovelStatus('ongoing'), false);
+  assert.equal(isNovelStatus('Unknown'), false);
+  assert.equal(isNovelStatus('Licensed'), false);
+  assert.equal(isNovelStatus('Publishing Finished'), false);
+  assert.deepEqual(
+    Object.values(
+      createHostModuleResolver(() => ({}))('@libs/novelStatus').NovelStatus,
+    ),
+    ['Ongoing', 'Completed', 'Cancelled', 'On Hiatus'],
+  );
 
   assert.equal(isPluginInstallMode(PluginInstallModes.Single), true);
   assert.equal(isPluginInstallMode(PluginInstallModes.MultiSource), true);

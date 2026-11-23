@@ -160,7 +160,7 @@ class KomgaPlugin implements Plugin.PluginBase {
   id = 'komga';
   name = 'Komga';
   icon = 'src/multi/komga/icon.png';
-  version = '1.0.6';
+  version = '1.0.7';
 
   getBaseUrl(): string {
     return this.configuredServerUrl() || DISPLAY_SITE;
@@ -369,7 +369,7 @@ class KomgaPlugin implements Plugin.PluginBase {
       novelId: sourceNovelId(series.id),
       path: novelPath,
       name: series.name,
-      status: NovelStatus.Unknown,
+      status: NovelStatus.Ongoing,
       chapters: [],
     };
     novel.author = (series.booksMetadata.authors ?? [])
@@ -393,7 +393,7 @@ class KomgaPlugin implements Plugin.PluginBase {
         novel.status = NovelStatus.OnHiatus;
         break;
       default:
-        novel.status = NovelStatus.Unknown;
+        novel.status = NovelStatus.Ongoing;
     }
 
     novel.summary = series.booksMetadata.summary;

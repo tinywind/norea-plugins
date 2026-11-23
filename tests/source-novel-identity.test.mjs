@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'vite';
 import { sourceNovelId } from '../plugins/novelId.helper.ts';
-import { NovelStatus } from '../src/types/constants.ts';
+import { NovelStatus, isNovelStatus } from '../src/types/constants.ts';
 
 const VALID_NOVEL_STATUSES = new Set(Object.values(NovelStatus));
 
@@ -26,7 +26,7 @@ function assertNovelIdentity(novel, expectedId) {
   assert.equal(novel.novelId, expectedId);
   if (novel.path !== undefined) {
     assert.ok(
-      VALID_NOVEL_STATUSES.has(novel.status),
+      isNovelStatus(novel.status) && VALID_NOVEL_STATUSES.has(novel.status),
       `Expected canonical NovelStatus, got ${JSON.stringify(novel.status)}`,
     );
   }
@@ -83,12 +83,32 @@ test('source IDs preserve source keys and encode unsafe directory names reversib
   assert.throws(() => sourceNovelId('\ud800'));
 });
 
+test('NovelStatus exposes only the four canonical contract values', () => {
+  assert.deepEqual(Object.values(NovelStatus), [
+    'Ongoing',
+    'Completed',
+    'Cancelled',
+    'On Hiatus',
+  ]);
+  for (const status of Object.values(NovelStatus)) {
+    assert.equal(isNovelStatus(status), true);
+  }
+  for (const removed of ['Unknown', 'Licensed', 'Publishing Finished']) {
+    assert.equal(isNovelStatus(removed), false);
+    assert.equal(VALID_NOVEL_STATUSES.has(removed), false);
+  }
+});
+
 test('Gutenberg keeps its ebook ID when metadata is unavailable', async () => {
   await withPlugin('/plugins/english/projectgutenberg.ts', async plugin => {
     globalThis.fetch = async () => new globalThis.Response('<feed></feed>');
     const path = 'ebooks/1342.opds';
-    assertNovelIdentity(await plugin.parseNovel(path), '1342');
-    assertNovelIdentity(await plugin.parseNovelSince(path, 1), '1342');
+    const novel = await plugin.parseNovel(path);
+    assertNovelIdentity(novel, '1342');
+    assert.equal(novel.status, NovelStatus.Ongoing);
+    const novelSince = await plugin.parseNovelSince(path, 1);
+    assertNovelIdentity(novelSince, '1342');
+    assert.equal(novelSince.status, NovelStatus.Ongoing);
   });
 });
 
@@ -122,8 +142,12 @@ test('Aozora uses the catalog work ID across card URLs and missing records', asy
     plugin.catalog = async () => ({ byId: new Map() });
     const path =
       'book/123:https%3A%2F%2Fwww.aozora.gr.jp%2Fcards%2F1%2Fcard123.html';
-    assertNovelIdentity(await plugin.parseNovel(path), '123');
-    assertNovelIdentity(await plugin.parseNovelSince('book/123', 1), '123');
+    const novel = await plugin.parseNovel(path);
+    assertNovelIdentity(novel, '123');
+    assert.equal(novel.status, NovelStatus.Ongoing);
+    const novelSince = await plugin.parseNovelSince('book/123', 1);
+    assertNovelIdentity(novelSince, '123');
+    assert.equal(novelSince.status, NovelStatus.Ongoing);
   });
 });
 
@@ -168,12 +192,19 @@ test('OAPEN resolves path aliases to the same repository handle', async () => {
       bitstreams: [],
     });
     for (const path of ['handle/20.500.12657/123', 'item/a1b2c3']) {
-      assertNovelIdentity(await plugin.parseNovel(path), '20.500.12657%2F123');
+      const novel = await plugin.parseNovel(path);
+      assertNovelIdentity(novel, '20.500.12657%2F123');
+      assert.equal(novel.status, NovelStatus.Completed);
       assertNovelIdentity(
         await plugin.parseNovelSince(path, 1),
         '20.500.12657%2F123',
       );
     }
+
+    plugin.fetchItem = async () => undefined;
+    const missing = await plugin.parseNovel('handle/20.500.12657/123');
+    assertNovelIdentity(missing, '20.500.12657%2F123');
+    assert.equal(missing.status, NovelStatus.Ongoing);
   });
 });
 
@@ -231,13 +262,15 @@ test('PepperCarrot keeps separate language editions', async () => {
 test('Komga takes the series ID from the server response', async () => {
   await withPlugin('/plugins/multi/komga.ts', async plugin => {
     plugin.serverUrl = () => 'https://komga.example/';
+    let seriesStatus;
     plugin.makeRequest = async path =>
       path.includes('/books?')
         ? JSON.stringify({ content: [] })
         : JSON.stringify({
             id: '0A1B2C3D4E5F6',
             name: 'Series',
-            metadata: {},
+            metadata:
+              seriesStatus === undefined ? {} : { status: seriesStatus },
             booksMetadata: {},
           });
     for (const path of [
@@ -247,10 +280,24 @@ test('Komga takes the series ID from the server response', async () => {
       const novel = await plugin.parseNovel(path);
       assertNovelIdentity(novel, '0%411%422%433%444%455%466');
       assert.equal(novel.path, path);
+      assert.equal(novel.status, NovelStatus.Ongoing);
       assertNovelIdentity(
         await plugin.parseNovelSince(path, 1),
         '0%411%422%433%444%455%466',
       );
+    }
+
+    for (const [rawStatus, expectedStatus] of [
+      ['ENDED', NovelStatus.Completed],
+      ['ONGOING', NovelStatus.Ongoing],
+      ['ABANDONED', NovelStatus.Cancelled],
+      ['HIATUS', NovelStatus.OnHiatus],
+      ['UNKNOWN', NovelStatus.Ongoing],
+    ]) {
+      seriesStatus = rawStatus;
+      const novel = await plugin.parseNovel('api/v1/series/0A1B2C3D4E5F6');
+      assertNovelIdentity(novel, '0%411%422%433%444%455%466');
+      assert.equal(novel.status, expectedStatus);
     }
   });
 });
