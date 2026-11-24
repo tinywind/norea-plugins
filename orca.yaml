@@ -1,0 +1,12 @@
+# Orca worktree lifecycle hooks (only used when opened in Orca).
+scripts:
+  setup: |
+    npm ci &&
+    npm run hooks:install &&
+    if [ ! -f .env ]; then
+      if [ -n "${ORCA_ROOT_PATH:-}" ] && [ -f "$ORCA_ROOT_PATH/.env" ]; then
+        cp "$ORCA_ROOT_PATH/.env" .env
+      elif [ -f .env.template ]; then
+        cp .env.template .env
+      fi
+    fi
